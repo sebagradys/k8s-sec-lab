@@ -1,0 +1,135 @@
+# Celowo podatne workloady do testów Kubescape / Trivy / Falco / Tetragon
+# NIE używać na produkcji
+
+---
+# 1. Privileged container (C-0017 — Critical)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: privileged-container
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: privileged-container
+  template:
+    metadata:
+      labels:
+        app: privileged-container
+    spec:
+      containers:
+      - name: privileged-container
+        image: ubuntu:20.04
+        command: ["sleep", "infinity"]
+        securityContext:
+          privileged: true
+        # Brak resource limits (C-0009 — Medium)
+
+---
+# 2. HostPath mount na / (C-0045 — High)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostpath-mount
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hostpath-mount
+  template:
+    metadata:
+      labels:
+        app: hostpath-mount
+    spec:
+      containers:
+      - name: hostpath-mount
+        image: ubuntu:20.04
+        command: ["sleep", "infinity"]
+        volumeMounts:
+        - name: host-root
+          mountPath: /host
+        # Brak securityContext (C-0044 — Medium)
+        # Brak resource limits (C-0009 — Medium)
+      volumes:
+      - name: host-root
+        hostPath:
+          path: /
+
+---
+# 3. Hardcoded secrets w env vars (C-0012 — Medium)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hardcoded-secrets
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hardcoded-secrets
+  template:
+    metadata:
+      labels:
+        app: hardcoded-secrets
+    spec:
+      containers:
+      - name: hardcoded-secrets
+        image: nginx:latest
+        env:
+        - name: DB_PASSWORD
+          value: "SuperSecretPassword123!"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        - name: API_TOKEN
+          value: "ghp_exampleTokenForTesting1234567890"
+
+---
+# 4. Wildcard RBAC ClusterRole (C-0034 — High)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wildcard-clusterrole
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wildcard-clusterrolebinding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: wildcard-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# 5. Pod z rootem i bez żadnych zabezpieczeń (C-0044 — Medium)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: run-as-root
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: run-as-root
+  template:
+    metadata:
+      labels:
+        app: run-as-root
+    spec:
+      containers:
+      - name: run-as-root
+        image: nginx:latest
+        securityContext:
+          runAsUser: 0
+          allowPrivilegeEscalation: true

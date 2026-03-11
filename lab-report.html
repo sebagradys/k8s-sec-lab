@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K8s Security Lab — Raport</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #22263a;
+      --border: #2e3350;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --critical: #ef4444;
+      --high: #f97316;
+      --medium: #eab308;
+      --low: #22c55e;
+      --notice: #3b82f6;
+      --warning: #f97316;
+      --code-bg: #141720;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 0 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #a78bfa, var(--accent));
+    }
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .header h1 span { color: var(--accent2); }
+    .header .meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .header .meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Score cards */
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .score-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .score-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .score-card.trivy::before { background: #06b6d4; }
+    .score-card.kubescape::before { background: var(--accent); }
+    .score-card.falco::before { background: #f97316; }
+    .score-card.tetragon::before { background: #10b981; }
+    .score-card .tool-name {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .score-card .score {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .score-card.trivy .score { color: #06b6d4; }
+    .score-card.kubescape .score { color: var(--accent2); }
+    .score-card.falco .score { color: #f97316; }
+    .score-card.tetragon .score { color: #10b981; }
+    .score-card .score-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    .section-icon.trivy { background: rgba(6,182,212,0.15); }
+    .section-icon.kubescape { background: rgba(99,102,241,0.15); }
+    .section-icon.falco { background: rgba(249,115,22,0.15); }
+    .section-icon.tetragon { background: rgba(16,185,129,0.15); }
+    .section-icon.infra { background: rgba(139,92,246,0.15); }
+    .section-header h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    .section-badge {
+      margin-left: auto;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-ok { background: rgba(16,185,129,0.15); color: #10b981; }
+    .badge-warn { background: rgba(249,115,22,0.15); color: #f97316; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--bg3);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    th:first-child { border-radius: 8px 0 0 8px; }
+    th:last-child { border-radius: 0 8px 8px 0; }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Severity badges */
+    .sev {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .sev-critical { background: rgba(239,68,68,0.15); color: var(--critical); }
+    .sev-high { background: rgba(249,115,22,0.15); color: var(--high); }
+    .sev-medium { background: rgba(234,179,8,0.15); color: var(--medium); }
+    .sev-low { background: rgba(34,197,94,0.15); color: var(--low); }
+    .sev-notice { background: rgba(59,130,246,0.15); color: var(--notice); }
+    .sev-warning { background: rgba(249,115,22,0.15); color: var(--warning); }
+
+    /* Code */
+    pre, code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      margin: 12px 0;
+    }
+    .code-block .comment { color: #4b5563; }
+    .code-block .cmd { color: #a78bfa; }
+    code {
+      background: var(--bg3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: #a78bfa;
+    }
+
+    /* Finding cards */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .finding-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .finding-card .pod-name {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-family: monospace;
+    }
+    .finding-card .findings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .finding-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+    .finding-item .desc {
+      color: var(--text-muted);
+      flex: 1;
+    }
+
+    /* Result box */
+    .result-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 12px 0;
+    }
+    .result-box.success { border-color: rgba(16,185,129,0.3); }
+    .result-box.blocked { border-color: rgba(239,68,68,0.3); }
+
+    /* Compliance meter */
+    .compliance-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .compliance-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+    .compliance-label span:last-child {
+      font-weight: 700;
+      color: var(--accent2);
+    }
+    .compliance-bar {
+      height: 8px;
+      background: var(--bg3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .compliance-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .compliance-sub {
+      display: flex;
+      gap: 16px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .compliance-sub-item {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .compliance-sub-item strong { color: var(--text); }
+
+    /* Alert list */
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .alert-item {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.87rem;
+    }
+    .alert-rule { font-weight: 600; flex: 1; }
+    .alert-pod { font-size: 0.78rem; color: var(--text-muted); font-family: monospace; }
+    .alert-count {
+      background: var(--bg3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Test result */
+    .test-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .test-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .test-box.blocked { border-color: rgba(239,68,68,0.4); }
+    .test-box.allowed { border-color: rgba(16,185,129,0.4); }
+    .test-box .emoji { font-size: 2rem; margin-bottom: 8px; }
+    .test-box .pod { font-size: 0.75rem; font-family: monospace; color: var(--text-muted); margin-bottom: 6px; }
+    .test-box .status { font-weight: 700; font-size: 0.95rem; }
+    .test-box.blocked .status { color: var(--critical); }
+    .test-box.allowed .status { color: var(--low); }
+    .test-box .exit-code { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Issues table */
+    .issues-wrap { margin-top: 24px; }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .test-compare { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <h1>K8s Security <span>Lab Report</span></h1>
+  <div class="meta">
+    <span>📅 2026-03-11</span>
+    <span>☁️ GKE Standard · europe-west1-b</span>
+    <span>🖥️ e2-standard-2 · Ubuntu Containerd</span>
+    <span>☁️ GCP Free Trial</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Kontekst i cel -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon infra">🎯</div>
+      <h2>Kontekst i cel</h2>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 16px; line-height: 1.8;">
+      Celem tego labu było praktyczne przetestowanie open-source'owych narzędzi do monitorowania bezpieczeństwa Kubernetes — sprawdzenie jak działają, co wykrywają i gdzie są granice każdego z nich. Postawiliśmy celowo dziurawy klaster i zobaczyliśmy co narzędzia faktycznie potrafią wychwycić — zarówno na poziomie statycznej konfiguracji, jak i w czasie rzeczywistym.
+    </p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+      <div class="result-box">
+        <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;">Warstwa 1 — Statyczna</p>
+        <p style="font-size: 0.9rem; line-height: 1.7;">Misconfiguracje i CVE wykrywane przed uruchomieniem: privileged containers, HostPath mount, wildcard RBAC, sekrety w env vars. Narzędzia: <strong>Trivy Operator</strong>, <strong>Kubescape</strong>.</p>
+      </div>
+      <div class="result-box">
+        <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;">Warstwa 2 — Runtime</p>
+        <p style="font-size: 0.9rem; line-height: 1.7;">Podejrzane zachowania w czasie rzeczywistym: odczyt <code>/etc/shadow</code>, uruchomienie shella w kontenerze, skanowanie sieci. Narzędzia: <strong>Falco</strong> (detekcja), <strong>Tetragon</strong> (enforcement + SIGKILL).</p>
+      </div>
+    </div>
+
+    <div class="result-box" style="margin-bottom: 0;">
+      <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;">Środowisko testowe</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; font-size: 0.88rem;">
+        <span>☁️ <strong>GKE Standard</strong> — nie Autopilot (zbyt restrykcyjny)</span>
+        <span>🖥️ <strong>e2-standard-2</strong> — 2 vCPU, 8 GB RAM</span>
+        <span>🐧 <strong>UBUNTU_CONTAINERD</strong> — wymagane przez Tetragon</span>
+        <span>📍 <strong>europe-west1-b</strong></span>
+        <span>💾 <strong>50 GB</strong> SSD per node</span>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 12px; line-height: 1.7;">
+        Do tej konfiguracji doszliśmy iteracyjnie — zaczęliśmy od <code>e2-small</code>, potem <code>e2-medium</code>, ale cztery operatory jednocześnie generują znacznie więcej resource requests niż się wydaje i pody zostawały w stanie <code>Pending</code>. Finalnie <code>e2-standard-2</code> + Ubuntu node pool (wymagany przez Tetragon ze względu na bug BTF w kernelu GKE 6.12+).
+      </p>
+    </div>
+  </div>
+
+  <!-- Score cards -->
+  <div class="score-grid">
+    <div class="score-card trivy">
+      <div class="tool-name">Trivy Operator</div>
+      <div class="score">12</div>
+      <div class="score-label">HIGH findings (misconfig)</div>
+    </div>
+    <div class="score-card kubescape">
+      <div class="tool-name">Kubescape</div>
+      <div class="score">80</div>
+      <div class="score-label">/ 100 compliance score</div>
+    </div>
+    <div class="score-card falco">
+      <div class="tool-name">Falco</div>
+      <div class="score">4</div>
+      <div class="score-label">reguły wyzwolone</div>
+    </div>
+    <div class="score-card tetragon">
+      <div class="tool-name">Tetragon</div>
+      <div class="score">✓</div>
+      <div class="score-label">SIGKILL enforcement</div>
+    </div>
+  </div>
+
+  <!-- Infrastruktura -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon infra">🏗️</div>
+      <h2>Instalacja krok po kroku</h2>
+      <span class="section-badge badge-ok">RUNNING</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Krok</th>
+            <th>Komenda / akcja</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Włączenie GKE API</td>
+            <td><code>gcloud services enable container.googleapis.com</code></td>
+            <td><span class="sev sev-low">OK</span></td>
+          </tr>
+          <tr>
+            <td>Tworzenie klastra</td>
+            <td><code>gcloud container clusters create kubescape-vulnerable-lab --zone=europe-west1-b --machine-type=e2-standard-2</code></td>
+            <td><span class="sev sev-low">OK</span></td>
+          </tr>
+          <tr>
+            <td>Node pool Ubuntu</td>
+            <td><code>--image-type=UBUNTU_CONTAINERD</code> (wymagane dla Tetragon)</td>
+            <td><span class="sev sev-low">OK</span></td>
+          </tr>
+          <tr>
+            <td>Podatne workloady</td>
+            <td><code>kubectl apply -f vulnerable-workloads.yaml</code></td>
+            <td><span class="sev sev-low">OK</span></td>
+          </tr>
+          <tr>
+            <td>kubectl + helm</td>
+            <td>Instalacja przez <code>gcloud components install kubectl</code> + <code>brew install helm</code></td>
+            <td><span class="sev sev-low">OK</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <p style="font-size:0.85rem; color: var(--text-muted); margin-bottom: 8px;">Podatne workloady:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Deployment</th><th>Podatność</th><th>Kontrolka</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>privileged-container</code></td><td>Privileged container</td><td>C-0017</td></tr>
+            <tr><td><code>hostpath-mount</code></td><td>HostPath mount na <code>/</code></td><td>C-0045</td></tr>
+            <tr><td><code>hardcoded-secrets</code></td><td>Sekrety w env vars (AWS, DB, GitHub token)</td><td>C-0012</td></tr>
+            <tr><td><code>run-as-root</code></td><td>runAsUser: 0, allowPrivilegeEscalation</td><td>C-0044</td></tr>
+            <tr><td><code>wildcard-clusterrole</code></td><td>RBAC <code>*/*/*</code></td><td>C-0034</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trivy -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon trivy">🔍</div>
+      <h2>Trivy Operator — CVE & Misconfiguracje</h2>
+      <span class="section-badge badge-warn">12 HIGH</span>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 20px; line-height: 1.8;">
+      Trivy Operator to pierwsza linia obrony — skanuje wszystko co jest w klastrze zanim cokolwiek złego się wydarzy. Po zainstalowaniu automatycznie wykrywa każdy nowy workload i uruchamia skan. Wyniki lądują jako CRDs w klastrze, więc można je odpytywać przez <code>kubectl</code> jak każdy inny zasób. Skonfigurowaliśmy go żeby skupiał się tylko na HIGH i CRITICAL — żeby nie tonąć w szumie przy pierwszym przeglądzie.
+    </p>
+
+    <div class="code-block">
+      <span class="comment"># Instalacja</span><br>
+      helm repo add aqua https://aquasecurity.github.io/helm-charts/<br>
+      helm install trivy-operator aqua/trivy-operator \<br>
+      &nbsp;&nbsp;--namespace trivy-system --create-namespace \<br>
+      &nbsp;&nbsp;--set trivy.ignoreUnfixed=true \<br>
+      &nbsp;&nbsp;<span class="cmd">--set "trivy.severity=HIGH\,CRITICAL"</span> \<br>
+      &nbsp;&nbsp;--set operator.scanJobsConcurrentLimit=1
+    </div>
+
+    <div class="findings-grid">
+      <div class="finding-card">
+        <div class="pod-name">privileged-container</div>
+        <div class="findings-list">
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Privileged container (AVD-KSV-0017)</span></div>
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Default security context (AVD-KSV-0118)</span></div>
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Root filesystem not read-only (AVD-KSV-0014)</span></div>
+        </div>
+      </div>
+      <div class="finding-card">
+        <div class="pod-name">hostpath-mount</div>
+        <div class="findings-list">
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Disallowed volumes — HostPath (AVD-KSV-0121)</span></div>
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Default security context (AVD-KSV-0118)</span></div>
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Root filesystem not read-only (AVD-KSV-0014)</span></div>
+        </div>
+      </div>
+      <div class="finding-card">
+        <div class="pod-name">hardcoded-secrets</div>
+        <div class="findings-list">
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Default security context (AVD-KSV-0118)</span></div>
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Root filesystem not read-only (AVD-KSV-0014)</span></div>
+        </div>
+      </div>
+      <div class="finding-card">
+        <div class="pod-name">run-as-root</div>
+        <div class="findings-list">
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Default security context (AVD-KSV-0118)</span></div>
+          <div class="finding-item"><span class="sev sev-high">HIGH</span><span class="desc">Root filesystem not read-only (AVD-KSV-0014)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <span class="comment"># Eksport wyników do CSV</span><br>
+      kubectl get configauditreports -A -o json \<br>
+      &nbsp;&nbsp;| jq -r '.items[] | .metadata.name as $name |<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;.report.checks[] | select(.success==false) |<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;[$name, .severity, .checkID, .title] | @csv' \<br>
+      &nbsp;&nbsp;&gt; trivy-audit.csv
+    </div>
+  </div>
+
+  <!-- Kubescape -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon kubescape">🛡️</div>
+      <h2>Kubescape — Compliance & Posture</h2>
+      <span class="section-badge badge-warn">Score: 80/100</span>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 20px; line-height: 1.8;">
+      Kubescape patrzy na klaster z innej perspektywy niż Trivy — zamiast CVE w obrazach, sprawdza czy konfiguracja klastra jest zgodna z frameworkami bezpieczeństwa: CIS Benchmark, NSA-CISA, MITRE ATT&CK. Daje "duży obraz" — jaki procent zasobów spełnia wymagania i które konkretnie kontrolki są naruszone. Operator skanuje cyklicznie (ustawiony na 02:00), do testów uruchamialiśmy go ręcznie przez job.
+    </p>
+
+    <div class="compliance-wrap">
+      <div class="compliance-label">
+        <span>Overall Compliance Score</span>
+        <span>80 / 100</span>
+      </div>
+      <div class="compliance-bar">
+        <div class="compliance-fill" style="width: 80%"></div>
+      </div>
+      <div class="compliance-sub">
+        <div class="compliance-sub-item"><strong style="color:var(--critical)">0</strong> Critical</div>
+        <div class="compliance-sub-item"><strong style="color:var(--high)">73</strong> High</div>
+        <div class="compliance-sub-item"><strong style="color:var(--medium)">177</strong> Medium</div>
+        <div class="compliance-sub-item">Frameworks: CIS, NSA-CISA, MITRE ATT&CK</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Severity</th><th>Kontrolka</th><th>Opis</th><th>Workload</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="sev sev-high">HIGH</span></td><td>C-0017</td><td>Privileged container</td><td><code>privileged-container</code></td></tr>
+          <tr><td><span class="sev sev-high">HIGH</span></td><td>C-0045</td><td>HostPath mount</td><td><code>hostpath-mount</code></td></tr>
+          <tr><td><span class="sev sev-high">HIGH</span></td><td>C-0012</td><td>Misplaced secrets (env vars)</td><td><code>hardcoded-secrets</code></td></tr>
+          <tr><td><span class="sev sev-high">HIGH</span></td><td>C-0034</td><td>Wildcard RBAC <code>*/*/*</code></td><td><code>wildcard-clusterrole</code></td></tr>
+          <tr><td><span class="sev sev-high">HIGH</span></td><td>C-0009</td><td>Brak CPU/memory limits</td><td>wszystkie</td></tr>
+          <tr><td><span class="sev sev-high">HIGH</span></td><td>CIS-5.7.3</td><td>Brak security context (0% pass rate)</td><td>wszystkie</td></tr>
+          <tr><td><span class="sev sev-medium">MEDIUM</span></td><td>C-0044</td><td>Non-root containers</td><td><code>run-as-root</code></td></tr>
+          <tr><td><span class="sev sev-medium">MEDIUM</span></td><td>—</td><td>Ingress/Egress not blocked (0% pass rate)</td><td>wszystkie</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-block" style="margin-top:16px">
+      <span class="comment"># Ręczne uruchomienie skanu</span><br>
+      kubectl create job -n kubescape \<br>
+      &nbsp;&nbsp;--from=cronjob/kubescape-scheduler manual-scan-$(date +%s)
+    </div>
+  </div>
+
+  <!-- Falco -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon falco">👁️</div>
+      <h2>Falco — Runtime Detekcja</h2>
+      <span class="section-badge badge-ok">RUNNING</span>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 20px; line-height: 1.8;">
+      Trivy i Kubescape działają statycznie — mówią co jest źle skonfigurowane. Falco wchodzi w grę gdy klaster już działa i trzeba łapać podejrzane zachowania w czasie rzeczywistym. Działa przez eBPF, podpina się do kernela i obserwuje syscalle ze wszystkich kontenerów bez modyfikowania obrazów. Tylko wykrywa i alarmuje — nie blokuje, co pozwala włączyć go w trybie obserwacji bez ryzyka dla produkcji. Użyliśmy Falcosidekick do rozsyłania alertów i jego wbudowanego WebUI. Problem z instalacją: legacy eBPF driver nie miał prebuilt binarki dla kernela GKE 6.12.55+ — fix to przełączenie na <code>modern_ebpf</code>.
+    </p>
+
+    <div class="code-block">
+      <span class="comment"># Instalacja z modern eBPF (wymagane na GKE kernel 6.12.55+)</span><br>
+      helm install falco falcosecurity/falco \<br>
+      &nbsp;&nbsp;--namespace falco --create-namespace \<br>
+      &nbsp;&nbsp;--set falco.json_output=true \<br>
+      &nbsp;&nbsp;--set falcosidekick.enabled=true \<br>
+      &nbsp;&nbsp;--set falcosidekick.webui.enabled=true \<br>
+      &nbsp;&nbsp;<span class="cmd">--set driver.kind=modern_ebpf</span>
+    </div>
+
+    <div class="alert-list">
+      <div class="alert-item">
+        <span class="sev sev-warning">WARNING</span>
+        <span class="alert-rule">Read sensitive file untrusted</span>
+        <span class="alert-pod">privileged-container · cat /etc/shadow</span>
+        <span class="alert-count">×2</span>
+      </div>
+      <div class="alert-item">
+        <span class="sev sev-warning">WARNING</span>
+        <span class="alert-rule">Search Private Keys or Passwords</span>
+        <span class="alert-pod">privileged-container · find / -name id_rsa</span>
+        <span class="alert-count">×1</span>
+      </div>
+      <div class="alert-item">
+        <span class="sev sev-notice">NOTICE</span>
+        <span class="alert-rule">Contact K8S API Server From Container</span>
+        <span class="alert-pod">kubescape / node-agent</span>
+        <span class="alert-count">×17</span>
+      </div>
+      <div class="alert-item">
+        <span class="sev sev-notice">NOTICE</span>
+        <span class="alert-rule">Packet socket created in container</span>
+        <span class="alert-pod">kubescape / node-agent</span>
+        <span class="alert-count">×4</span>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <p style="font-size:0.85rem; color: var(--text-muted); margin-bottom:6px">Falcosidekick WebUI:</p>
+      <div class="code-block">
+        kubectl port-forward -n falco svc/falco-falcosidekick-ui 2802:2802<br>
+        <span class="comment"># http://localhost:2802 · login: admin / admin</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tetragon -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon tetragon">⚔️</div>
+      <h2>Tetragon — Runtime Enforcement</h2>
+      <span class="section-badge badge-ok">SIGKILL ✓</span>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 20px; line-height: 1.8;">
+      Tetragon idzie krok dalej niż Falco — zamiast tylko alarmować, potrafi aktywnie blokować przez SIGKILL zanim cokolwiek złego się stanie. Też eBPF, overhead poniżej 1% CPU. Polityki (<code>TracingPolicy</code>) można targetować po syscallu, namespace, labelu poda. Poważniejszy problem z instalacją niż Falco: crashował na domyślnym nodzie GKE (COS) z błędem BTF dla modułu <code>nls_cp437</code> — bug obecny we wszystkich wersjach 1.4–1.6. Jedynym obejściem było użycie node poola z <code>UBUNTU_CONTAINERD</code>.
+    </p>
+
+    <div class="code-block">
+      <span class="comment"># Wymaga UBUNTU_CONTAINERD node pool (bug BTF na COS kernel 6.12.55+)</span><br>
+      helm install tetragon cilium/tetragon --namespace kube-system
+    </div>
+
+    <p style="font-size:0.85rem; color: var(--text-muted); margin: 16px 0 8px;">TracingPolicy — blokowanie shell w podach z labelem <code>app: privileged-container</code>:</p>
+
+    <div class="code-block">
+      apiVersion: cilium.io/v1alpha1<br>
+      kind: TracingPolicy<br>
+      metadata:<br>
+      &nbsp;&nbsp;name: block-shell-in-default<br>
+      spec:<br>
+      &nbsp;&nbsp;podSelector:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;matchLabels:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">app: privileged-container</span><br>
+      &nbsp;&nbsp;kprobes:<br>
+      &nbsp;&nbsp;- call: "sys_execve"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;syscall: true<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;selectors:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;- matchArgs:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- operator: "Postfix"<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;values: ["/bin/sh", "/bin/bash"]<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;matchActions:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">- action: Sigkill</span>
+    </div>
+
+    <div class="test-compare">
+      <div class="test-box blocked">
+        <div class="emoji">🚫</div>
+        <div class="pod">privileged-container</div>
+        <div class="status">ZABLOKOWANY</div>
+        <div class="exit-code">exit code 137 (SIGKILL)</div>
+      </div>
+      <div class="test-box allowed">
+        <div class="emoji">✅</div>
+        <div class="pod">hardcoded-secrets</div>
+        <div class="status">DOZWOLONY</div>
+        <div class="exit-code">exit code 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Napotkane problemy -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon infra">⚠️</div>
+      <h2>Napotkane problemy</h2>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="result-box">
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--high); margin-bottom: 8px;">Narzędzia są zasobożerne — bardziej niż się wydaje</p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted);">
+          Każde z czterech narzędzi działa jako osobny operator lub DaemonSet i definiuje własne <code>resource requests</code>. Gdy uruchomimy je wszystkie na raz, suma tych requestów szybko przekracza pojemność małego noda — scheduler K8s zaczyna zostawiać nowe pody w stanie <code>Pending</code>. Nie chodzi o faktyczne zużycie CPU czy RAM w danej chwili, ale o zarezerwowaną pojemność. Na pojedynczym <code>e2-standard-2</code> (2 vCPU, 8 GB) cztery operatory mieszczą się bez problemu. Przy planowaniu produkcyjnym warto z góry zarezerwować dedykowane nody dla narzędzi monitorujących.
+        </p>
+      </div>
+      <div class="result-box">
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--high); margin-bottom: 8px;">Tetragon wymaga Ubuntu — nie działa na domyślnym obrazie GKE</p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted);">
+          GKE domyślnie używa Container-Optimized OS (COS). Tetragon na tym systemie nie uruchamia się poprawnie ze względu na problem z metadanymi BTF modułu kernela <code>nls_cp437</code> — znany bug obecny w Tetragon 1.4–1.6, niezależny od wersji GKE. Obejście: node pool z obrazem <code>UBUNTU_CONTAINERD</code>, gdzie kernel ma kompletne BTF i Tetragon startuje bez problemów.
+        </p>
+      </div>
+      <div class="result-box">
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--medium); margin-bottom: 8px;">Falco wymaga nowszego sterownika eBPF na GKE</p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted);">
+          Domyślny driver eBPF Falco (legacy) wymaga prebuilt binarki pod konkretną wersję kernela. GKE regularnie aktualizuje kernele i bywa że dla najnowszych prebuilt binarki jeszcze nie ma. Rozwiązanie: <code>modern_ebpf</code> — sterownik wbudowany bezpośrednio w kernel (Linux 5.13+), który nie wymaga żadnych zewnętrznych plików i działa na wszystkich aktualnych wersjach GKE.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wnioski -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon infra">💡</div>
+      <h2>Wnioski</h2>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="result-box success">
+        <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #10b981; margin-bottom: 10px;">Co działało dobrze</p>
+        <p style="font-size: 0.88rem; line-height: 1.8; color: var(--text-muted);">
+          Wszystkie cztery narzędzia wykryły to co miały wykryć. Celowo złe konfiguracje pojawiły się w wynikach Trivy i Kubescape bez dodatkowej konfiguracji. Falco od razu łapał podejrzane syscalle. Tetragon po wgraniu <code>TracingPolicy</code> skutecznie blokował shell (exit 137), podczas gdy inne pody działały normalnie.<br><br>
+          Szczególnie warte uwagi: <strong>Falco wychwycił aktywność Kubescape node-agenta</strong> (połączenia do K8s API Server) jako podejrzaną. W produkcji trzeba skonfigurować białe listy dla własnych operatorów.
+        </p>
+      </div>
+
+      <div class="result-box">
+        <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;">Różnice między narzędziami</p>
+        <p style="font-size: 0.88rem; line-height: 1.8; color: var(--text-muted);">
+          Trivy i Kubescape pokrywają podobny obszar (statyczna analiza), ale z różnych kątów. Trivy jest bardziej szczegółowy na poziomie pojedynczego workloadu i CVE. Kubescape daje lepszy obraz compliance całego klastra i mapowanie na frameworki (CIS, MITRE) — przydatne przy audytach.<br><br>
+          Falco i Tetragon też się uzupełniają: Falco jest lepszy do szerokiej detekcji i integracji z zewnętrznymi systemami (Splunk, Slack), Tetragon do precyzyjnego enforcement na poziomie konkretnych procesów i namespaces.
+        </p>
+      </div>
+
+      <div class="result-box blocked">
+        <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #ef4444; margin-bottom: 10px;">Co sprawiło trudność</p>
+        <p style="font-size: 0.88rem; line-height: 1.8; color: var(--text-muted);">
+          Główne wyzwania były infrastrukturalne, nie związane z samymi narzędziami:
+        </p>
+        <ul style="font-size: 0.88rem; line-height: 2; color: var(--text-muted); margin-top: 8px; padding-left: 20px;">
+          <li><strong style="color: var(--text);">Zasoby nodów</strong> — cztery operatory jednocześnie na e2-small/e2-medium nie działają. Każdy definiuje własne resource requests i scheduler nie ma gdzie postawić podów.</li>
+          <li><strong style="color: var(--text);">Kompatybilność kernela</strong> — GKE 6.12+ ma bug BTF dla modułu nls_cp437, blokuje Tetragon na COS. Ubuntu node pool rozwiązuje problem.</li>
+          <li><strong style="color: var(--text);">Sekwencja instalacji</strong> — instalowanie wszystkiego naraz powoduje resource contention. Lepiej wdrażać etapami.</li>
+        </ul>
+      </div>
+
+      <div class="result-box">
+        <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;">Dalsze kroki</p>
+        <ul style="font-size: 0.88rem; line-height: 2; color: var(--text-muted); padding-left: 20px;">
+          <li>Centralna agregacja wyników z wielu klastrów — webhook + PostgreSQL lub ARMO Platform</li>
+          <li>Integracja Falcosidekick → Splunk HEC dla runtime eventów</li>
+          <li>Tuning reguł Falco — domyślne reguły generują dużo szumu od systemowych operatorów</li>
+          <li>Tetragon w trybie audit przed włączeniem enforcement — żeby zobaczyć co by blokował zanim faktycznie zacznie</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cleanup -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon infra">🗑️</div>
+      <h2>Cleanup</h2>
+    </div>
+    <div class="code-block">
+      <span class="comment"># Usunięcie klastra (ważne — koszty ~$0.07/h)</span><br>
+      gcloud container clusters delete kubescape-vulnerable-lab \<br>
+      &nbsp;&nbsp;--zone=europe-west1-b
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  K8s Security Lab · GKE Standard · Trivy + Kubescape + Falco + Tetragon · 2026-03-11
+</footer>
+
+</body>
+</html>
