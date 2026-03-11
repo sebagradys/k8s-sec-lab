@@ -364,7 +364,14 @@ kubectl exec -n default hardcoded-secrets-xxx -- /bin/bash -c "echo test"
 
 Każde z czterech narzędzi działa jako osobny operator lub DaemonSet i definiuje własne `resource requests`. Gdy uruchomimy je wszystkie na raz, suma tych requestów szybko przekracza to co oferuje mały node — scheduler K8s zaczyna zostawiać nowe pody w stanie `Pending`, bo nie ma gdzie ich umieścić. Nie chodzi o faktyczne zużycie CPU czy RAM w danej chwili, ale o zarezerwowaną pojemność.
 
-W praktyce: na pojedynczym nodzie `e2-standard-2` (2 vCPU, 8 GB) cztery operatory mieszczą się bez problemu. Mniejsze instancje (e2-small, e2-medium) okazały się niewystarczające. Przy planowaniu produkcyjnego wdrożenia warto z góry zarezerwować dedykowane nody dla narzędzi monitorujących i nie mieszać ich z workloadami aplikacyjnymi.
+Najbardziej zasobożerny moment w całym labie to była chwila, gdy działały jednocześnie:
+
+- **Trivy Operator** skanujący wszystkie 5 wdrożonych podatnych deploymentów — każdy skan to osobny Job (`trivy-operator` tworzy tymczasowe pody), w sumie do 5 równoległych jobów, każdy ściągający obraz Trivy i analizujący manifest
+- **Kubescape Operator** wykonujący pierwsze, pełne skanowanie klastra — inicjalny skan jest najbardziej intensywny, w tym momencie działały: `kubescape` (główny operator), `node-agent` (DaemonSet), `kollector`, `gateway`, `synchronizer`
+- **Falco** jako DaemonSet stale monitorujący wszystkie syscalle przez eBPF — stosunkowo stabilne zużycie, ale programy eBPF ładowane dynamicznie przy starcie
+- **Tetragon** jako DaemonSet z kernel-level eBPF hooks
+
+Suma `resource.requests` ze wszystkich tych podów — włącznie z tymczasowymi jobami skanującymi — przekroczyła allocatable CPU i RAM na nodach `e2-small` (1 vCPU, ~1.7 GB allocatable) i `e2-medium` (1 vCPU, ~3.4 GB allocatable). Scheduler zostawiał nowe pody w `Pending`. Dopiero `e2-standard-2` (2 vCPU, ~6.5 GB allocatable) dał wystarczający margines. Przy planowaniu produkcyjnego wdrożenia warto z góry zarezerwować dedykowane nody dla narzędzi monitorujących i nie mieszać ich z workloadami aplikacyjnymi — szczególnie podczas inicjalnych skanów, które zawsze są intensywniejsze niż późniejsze przyrostowe.
 
 ### Tetragon wymaga Ubuntu — nie działa na domyślnym obrazie GKE
 
@@ -399,11 +406,44 @@ Główne wyzwania były infrastrukturalne, nie związane z samymi narzędziami:
 
 ### Dalsze kroki
 
-To co przetestowaliśmy to punkt startowy. W środowisku produkcyjnym warto dodać:
-- Centralna agregacja wyników z wielu klastrów (webhook + PostgreSQL lub ARMO Platform)
-- Integracja Falcosidekick → Splunk HEC dla runtime eventów
-- Tuning reguł Falco — domyślne reguły generują dużo szumu od systemowych operatorów
-- Tetragon w trybie audit przed włączeniem enforcement — żeby zobaczyć co by blokował zanim faktycznie zacznie
+To co przetestowaliśmy to punkt startowy — jeden klaster, cztery narzędzia, ręczna weryfikacja wyników. W środowisku kilkudziesięciu lub kilkuset klastrów potrzebne są dwa niezależne pipeline'y: jeden do agregacji podatności CVE, drugi do routingu runtime eventów do SIEMa.
+
+#### Agregacja podatności CVE — jeden raport z całego środowiska
+
+Trivy Operator tworzy `VulnerabilityReport` CRDs lokalnie w każdym klastrze. Żeby zebrać je w jedno miejsce i wygenerować jeden CSV dla całego środowiska, potrzebna jest warstwa agregacyjna. Mamy kilka opcji:
+
+**Open source — DefectDojo (rekomendowane):**
+DefectDojo to open-source platforma do zarządzania podatnościami. Trivy ma natywną integrację — wyniki można importować przez REST API. Przy dziesiątkach klastrów: każdy klaster ma CronJob, który cyklicznie pobiera `VulnerabilityReports`, konwertuje do formatu SARIF lub JSON i pushuje do centralnego DefectDojo. Z DefectDojo można eksportować pełne raporty do CSV, filtrować po severity, klastrze, namespace, śledzić trend w czasie. Sam DefectDojo działa jako deployment poza klastrami (np. osobna VM lub dedykowany klaster).
+
+**Open source — własna agregacja przez Prometheus + Thanos:**
+Trivy Operator eksportuje metryki do Prometheusa (liczba CVE per severity, per image). Thanos lub Grafana Mimir potrafią agregować metryki z wielu Prometheusów w jeden widok. To dobre do dashboardów i alertów, ale nie zastępuje pełnego raportu CSV — metryki nie zawierają CVE ID ani pakietów.
+
+**Open source — skrypt agregujący przez kubeconfig contexts:**
+Dla mniejszej skali (do kilkudziesięciu klastrów) można napisać skrypt, który iteruje po kontekstach kubeconfig, uruchamia `kubectl get vulnerabilityreports -A -o json` na każdym i agreguje do jednego pliku. Szybkie do uruchomienia, ale nie skaluje się i wymaga dostępu sieciowego do każdego API Servera.
+
+**Komercyjne:**
+- **ARMO Platform** — komercyjny SaaS/on-prem zbudowany na Kubescape; natywne multi-cluster, eksport CSV, RBAC per team. Opcja jeśli nie chcemy budować własnego stacku.
+- **Wiz, Lacework, Prisma Cloud** — kompleksowe platformy CNAPP, obsługują multi-cluster natywnie; drogie, ale "zero operational overhead" po stronie aggregacji.
+
+#### Runtime eventy do SIEMa
+
+Falco przez Falcosidekick wspiera dziesiątki outputów out-of-the-box. Dla najpopularniejszych SIEMów:
+
+**Splunk:**
+Falcosidekick ma natywną integrację ze Splunk HEC (HTTP Event Collector). Wystarczy skonfigurować `--set falcosidekick.config.splunk.hostport=` i `--set falcosidekick.config.splunk.token=`. Każdy alert Falco trafia jako JSON event do wybranego Splunk index. Przy wielu klastrach: każdy klaster ma własny Falcosidekick, wszystkie wskazują na ten sam Splunk HEC endpoint.
+
+**Microsoft Sentinel:**
+Dwie ścieżki: Falcosidekick → webhook → Azure Logic Apps → Sentinel, lub Falcosidekick → syslog → Azure Monitor Agent → Sentinel. Druga jest prostsza operacyjnie. Alternatywnie Falcosidekick → Elasticsearch → Sentinel przez connector.
+
+**QRadar (IBM):**
+Falcosidekick obsługuje syslog output — QRadar przyjmuje eventy przez syslog. Prosta integracja przez `--set falcosidekick.config.syslog.host=`.
+
+**Co trzeba zbudować, żeby to działało przy setkach klastrów:**
+
+1. **Centralny Falcosidekick** jako osobny deployment poza klastrami aplikacyjnymi — każdy klaster-Falco konfigurujemy żeby wysyłał alerty do centralnego Falcosidekicka (zamiast lokalnego). Ogranicza liczbę komponentów do utrzymania i daje jeden punkt konfiguracji outputów.
+2. **Enrichment metadanych** — Falcosidekick może dodawać tagi (np. cluster name, environment) do każdego alertu. Bez tego w Splunku nie będzie wiadomo z którego klastra przyszedł event.
+3. **Tuning reguł Falco** — domyślne reguły generują szum od własnych operatorów (Kubescape, Trivy). Potrzebna allowlist dla znanych narzędzi, inaczej SIEM zostanie zasypany false positivami.
+4. **Tetragon audit mode przed enforcement** — Tetragon loguje wszystkie zdarzenia pasujące do TracingPolicy zanim zacznie je blokować. Warto zbierać te logi (JSON przez `tetragon-export`) do SIEMa jako źródło informacji o wykonaniach procesów na poziomie kernela — niezależnie od tego czy enforcement jest włączony.
 
 ---
 

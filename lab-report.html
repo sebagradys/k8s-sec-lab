@@ -766,7 +766,13 @@
       <div class="result-box">
         <p style="font-size: 0.8rem; font-weight: 600; color: var(--high); margin-bottom: 8px;">Narzędzia są zasobożerne — bardziej niż się wydaje</p>
         <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted);">
-          Każde z czterech narzędzi działa jako osobny operator lub DaemonSet i definiuje własne <code>resource requests</code>. Gdy uruchomimy je wszystkie na raz, suma tych requestów szybko przekracza pojemność małego noda — scheduler K8s zaczyna zostawiać nowe pody w stanie <code>Pending</code>. Nie chodzi o faktyczne zużycie CPU czy RAM w danej chwili, ale o zarezerwowaną pojemność. Na pojedynczym <code>e2-standard-2</code> (2 vCPU, 8 GB) cztery operatory mieszczą się bez problemu. Przy planowaniu produkcyjnym warto z góry zarezerwować dedykowane nody dla narzędzi monitorujących.
+          Każde z czterech narzędzi działa jako osobny operator lub DaemonSet i definiuje własne <code>resource requests</code>. Gdy uruchomimy je wszystkie na raz, suma tych requestów szybko przekracza pojemność małego noda — scheduler K8s zaczyna zostawiać nowe pody w stanie <code>Pending</code>. Nie chodzi o faktyczne zużycie CPU czy RAM w danej chwili, ale o zarezerwowaną pojemność.
+        </p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted); margin-top: 10px;">
+          Najbardziej zasobożerny moment w całym labie to była chwila, gdy działały jednocześnie: <strong style="color: var(--text);">Trivy Operator</strong> skanujący wszystkie 5 deploymentów — każdy skan to osobny tymczasowy Job, w sumie do 5 równoległych podów ściągających obraz Trivy i analizujących manifesty; <strong style="color: var(--text);">Kubescape Operator</strong> wykonujący pierwsze, pełne skanowanie klastra (inicjalny skan jest zawsze najbardziej intensywny) — w tym momencie działały jednocześnie: główny operator, <code>node-agent</code> DaemonSet, <code>kollector</code>, <code>gateway</code> i <code>synchronizer</code>; <strong style="color: var(--text);">Falco</strong> jako DaemonSet stale monitorujący syscalle przez eBPF; <strong style="color: var(--text);">Tetragon</strong> jako DaemonSet z kernel-level eBPF hooks.
+        </p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted); margin-top: 10px;">
+          Suma <code>resource.requests</code> przekroczyła allocatable CPU i RAM na <code>e2-small</code> i <code>e2-medium</code>. Dopiero <code>e2-standard-2</code> (2 vCPU, ~6.5 GB allocatable) dał wystarczający margines. Przy planowaniu produkcyjnym warto zarezerwować dedykowane nody dla narzędzi monitorujących i nie mieszać ich z workloadami aplikacyjnymi — szczególnie podczas inicjalnych skanów.
         </p>
       </div>
       <div class="result-box">
@@ -822,12 +828,33 @@
 
       <div class="result-box">
         <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;">Dalsze kroki</p>
-        <ul style="font-size: 0.88rem; line-height: 2; color: var(--text-muted); padding-left: 20px;">
-          <li>Centralna agregacja wyników z wielu klastrów — webhook + PostgreSQL lub ARMO Platform</li>
-          <li>Integracja Falcosidekick → Splunk HEC dla runtime eventów</li>
-          <li>Tuning reguł Falco — domyślne reguły generują dużo szumu od systemowych operatorów</li>
-          <li>Tetragon w trybie audit przed włączeniem enforcement — żeby zobaczyć co by blokował zanim faktycznie zacznie</li>
+        <p style="font-size: 0.88rem; line-height: 1.8; color: var(--text-muted); margin-bottom: 14px;">
+          To co przetestowaliśmy to punkt startowy — jeden klaster, cztery narzędzia, ręczna weryfikacja. W środowisku kilkudziesięciu lub kilkuset klastrów potrzebne są dwa niezależne pipeline'y: jeden do agregacji podatności CVE, drugi do routingu runtime eventów do SIEMa.
+        </p>
+
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 8px; margin-top: 16px;">Agregacja CVE — jeden raport z całego środowiska</p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted); margin-bottom: 10px;">
+          Trivy Operator tworzy <code>VulnerabilityReport</code> CRDs lokalnie w każdym klastrze. Żeby zebrać je w jedno miejsce i wygenerować CSV dla całego środowiska, potrzebna jest warstwa agregacyjna:
+        </p>
+        <ul style="font-size: 0.87rem; line-height: 2; color: var(--text-muted); padding-left: 20px; margin-bottom: 10px;">
+          <li><strong style="color: var(--text);">DefectDojo (open source, rekomendowane)</strong> — platforma do zarządzania podatnościami z natywną integracją Trivy. Każdy klaster ma CronJob, który pushuje <code>VulnerabilityReports</code> (format SARIF/JSON) do centralnego DefectDojo przez REST API. Eksport CSV, filtrowanie po severity/klastrze/namespace, śledzenie trendu w czasie.</li>
+          <li><strong style="color: var(--text);">Prometheus + Thanos/Mimir</strong> — Trivy eksportuje metryki (liczba CVE per severity). Thanos agreguje z wielu klastrów w jeden widok. Dobre do dashboardów i alertów, ale nie zawiera CVE ID ani nazw pakietów — nie zastępuje pełnego raportu.</li>
+          <li><strong style="color: var(--text);">Skrypt przez kubeconfig contexts</strong> — dla mniejszej skali: iteracja po kontekstach, <code>kubectl get vulnerabilityreports -A -o json</code>, agregacja do jednego pliku. Szybkie, ale nie skaluje się i wymaga dostępu sieciowego do każdego API Servera.</li>
+          <li><strong style="color: var(--text);">ARMO Platform / Wiz / Lacework</strong> — komercyjne, multi-cluster natywnie, eksport CSV out-of-the-box. Opcja gdy nie chcemy budować własnego stacku.</li>
         </ul>
+
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 8px; margin-top: 16px;">Runtime eventy do SIEMa</p>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted); margin-bottom: 10px;">
+          Falcosidekick obsługuje dziesiątki outputów out-of-the-box:
+        </p>
+        <ul style="font-size: 0.87rem; line-height: 2; color: var(--text-muted); padding-left: 20px; margin-bottom: 10px;">
+          <li><strong style="color: var(--text);">Splunk</strong> — natywna integracja przez HEC (HTTP Event Collector). Każdy alert jako JSON event do wybranego index. Konfiguracja: <code>falcosidekick.config.splunk.hostport</code> + token.</li>
+          <li><strong style="color: var(--text);">Microsoft Sentinel</strong> — Falcosidekick → syslog → Azure Monitor Agent → Sentinel, lub przez webhook → Logic Apps.</li>
+          <li><strong style="color: var(--text);">QRadar</strong> — Falcosidekick obsługuje syslog output; QRadar przyjmuje eventy przez syslog listener.</li>
+        </ul>
+        <p style="font-size: 0.87rem; line-height: 1.8; color: var(--text-muted);">
+          Przy setkach klastrów: <strong style="color: var(--text);">centralny Falcosidekick</strong> jako deployment poza klastrami aplikacyjnymi — każdy Falco wysyła alerty do jednego miejsca zamiast lokalnego sidekicka. Konieczny <strong style="color: var(--text);">enrichment metadanych</strong> (cluster name, environment) w konfiguracji Falcosidekick, inaczej w SIEMie nie będzie wiadomo z którego klastra przyszedł event. Tetragon JSON logs przez fluentd/fluent-bit jako dodatkowe źródło zdarzeń na poziomie kernela.
+        </p>
       </div>
     </div>
   </div>
