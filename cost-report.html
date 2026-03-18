@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raport Kosztowy — K8s Security Monitoring</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #22263a;
+      --border: #2e3350;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --green: #10b981;
+      --yellow: #eab308;
+      --orange: #f97316;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+      --teal: #14b8a6;
+      --az: #0078d4;
+      --az-light: #50e6ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 36px 28px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .header { margin-bottom: 32px; }
+    h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+    .header-sub { font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; }
+    .header-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .htag {
+      font-size: 0.68rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+
+    /* SECTION */
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* STAT CARDS */
+    .stat-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .stat-card {
+      flex: 1;
+      min-width: 160px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .stat-label { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-value { font-size: 1.4rem; font-weight: 800; line-height: 1.1; }
+    .stat-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    thead th {
+      text-align: left;
+      padding: 8px 12px;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--bg3);
+      color: var(--text-muted);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    tbody td:first-child { color: var(--text); font-weight: 600; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.total-row td { color: var(--text); font-weight: 700; border-top: 1px solid var(--border); background: var(--bg2); }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.72rem;
+      background: var(--bg3);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* COST TABLE */
+    .cost-table-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .cost-standard { color: #93c5fd; }
+    .cost-premium  { color: #86efac; font-weight: 700; }
+    .cost-delta    { color: #fbbf24; }
+
+    /* PHASE BOXES */
+    .phases { display: flex; flex-direction: column; gap: 8px; }
+    .phase-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .phase-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .phase-title { font-size: 0.82rem; font-weight: 700; }
+    .phase-md {
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--bg3);
+    }
+    .phase-table table { margin: 0; }
+    .phase-table tbody td:last-child {
+      text-align: right;
+      color: var(--text);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* TEAM TABLE */
+    .role-badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* TIMELINE */
+    .timeline-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 2;
+      overflow-x: auto;
+    }
+    .tl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .tl-label { width: 200px; flex-shrink: 0; font-size: 0.72rem; color: var(--text-muted); }
+    .tl-bar-wrap { display: flex; gap: 3px; }
+    .tl-cell { width: 60px; height: 20px; border-radius: 3px; flex-shrink: 0; }
+    .tl-empty { background: transparent; border: 1px solid var(--border); }
+    .tl-months {
+      display: flex;
+      gap: 3px;
+      padding-left: 210px;
+      margin-bottom: 4px;
+    }
+    .tl-month-label { width: 60px; text-align: center; font-size: 0.65rem; color: var(--text-muted); flex-shrink: 0; }
+
+    /* TCO */
+    .tco-row { display: flex; gap: 10px; }
+    .tco-box {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .tco-box h3 { font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; }
+    .tco-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--bg3);
+      font-size: 0.78rem;
+    }
+    .tco-line:last-child { border-bottom: none; }
+    .tco-line-label { color: var(--text-muted); }
+    .tco-line-value { font-weight: 700; }
+    .tco-total {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 2px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    /* RISK TABLE */
+    .risk-low    { color: #86efac; }
+    .risk-mid    { color: #fbbf24; }
+    .risk-high   { color: #f87171; }
+    .risk-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* NOTES */
+    .note {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-left: 3px solid;
+      background: var(--bg3);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .note strong { color: var(--text); }
+
+    hr { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+    footer { font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 24px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>Raport Kosztowy — K8s Security Monitoring</h1>
+  <div class="header-sub">
+    Architektura: Trivy + Falco → Azure Event Hubs → Databricks → ADLS Gen2 → Synapse → PowerBI<br>
+    Scenariusz: 5× wolumen CVE · private/premium deployment · multi-cloud (AKS · GKE · on-prem)
+  </div>
+  <div class="header-tags">
+    <span class="htag" style="border-color:#0078d4; color:#50e6ff; background:#0a1220;">Azure Managed Services</span>
+    <span class="htag" style="border-color:#166534; color:#86efac; background:#0a1a0a;">Open Source on Clusters</span>
+    <span class="htag" style="border-color:#78350f; color:#fcd34d; background:#1a1208;">3 950 nodów</span>
+    <span class="htag" style="border-color:#5b21b6; color:#c4b5fd; background:#0f0a1f;">~79 klastrów</span>
+    <span class="htag" style="border-color:#991b1b; color:#fca5a5; background:#1a0808;">Private Endpoints + CMK</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="section">
+  <div class="section-title">Kluczowe liczby</div>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Nody łącznie</div>
+      <div class="stat-value" style="color:#50e6ff;">3 950</div>
+      <div class="stat-sub">AKS 400 · GKE 50 · on-prem 3 500</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Wolumen Event Hubs</div>
+      <div class="stat-value" style="color:#fb923c;">~115 GB</div>
+      <div class="stat-sub">miesięcznie (5× CVE scenario)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Azure — koszt miesięczny</div>
+      <div class="stat-value" style="color:#86efac;">~$2 035</div>
+      <div class="stat-sub">private/premium deployment</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Koszt wdrożenia</div>
+      <div class="stat-value" style="color:#fbbf24;">~450 MD</div>
+      <div class="stat-sub">~900 000 PLN · 7–9 miesięcy</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Zespół</div>
+      <div class="stat-value" style="color:#c4b5fd;">11 osób</div>
+      <div class="stat-sub">peak 8 równolegle (Faza 3)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Break-even vs CNAPP</div>
+      <div class="stat-value" style="color:#f87171;">rok 5–6</div>
+      <div class="stat-sub">vs Wiz/Prisma $400k–800k/rok</div>
+    </div>
+  </div>
+</div>
+
+<!-- WOLUMEN DANYCH -->
+<div class="section">
+  <div class="section-title">Wolumen danych — założenia</div>
+  <div class="cost-table-wrap">
+    <table>
+      <thead><tr><th>Pipeline</th><th>Źródło</th><th>Pokrycie</th><th>Wolumen/miesiąc</th></tr></thead>
+      <tbody>
+        <tr><td>CVE events (5×)</td><td>Trivy Operator → CronJob</td><td>Wszystkie nody (3 950)</td><td class="cost-premium">60–90 GB</td></tr>
+        <tr><td>Runtime events</td><td>Falco + Falcosidekick</td><td>Prod only (~1 975 nodów)</td><td class="cost-standard">~4 GB</td></tr>
+        <tr><td>Audit logi</td><td>Fluent Bit → K8s API Server</td><td>Prod only (~1 975 nodów)</td><td class="cost-standard">~18 GB</td></tr>
+        <tr class="total-row"><td>Łącznie do Event Hubs</td><td colspan="2"></td><td>~115 GB/miesiąc</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;">
+    Założenia: Trivy skanuje przy zmianie obrazu (~10% podów/dzień) + tygodniowy pełny rescan · Falco po tuningu ~200 alertów/h per klaster prod · ~25 klastrów prod aktywnych runtime.
+  </p>
+</div>
+
+<!-- KOSZTY AZURE -->
+<div class="section">
+  <div class="section-title">Koszty Azure miesięczne — Standard vs Private/Premium</div>
+  <div class="cost-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Komponent</th>
+          <th class="cost-standard">Standard</th>
+          <th class="cost-premium">Private / Premium</th>
+          <th>Delta</th>
+          <th>Co daje Premium</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Azure Event Hubs</td>
+          <td class="cost-standard">$230</td>
+          <td class="cost-premium">$520</td>
+          <td class="cost-delta">+$290</td>
+          <td>Dedykowane PUs, private endpoint, CMK, 99.99% SLA</td>
+        </tr>
+        <tr>
+          <td>Azure Databricks</td>
+          <td class="cost-standard">$350</td>
+          <td class="cost-premium">$680</td>
+          <td class="cost-delta">+$330</td>
+          <td>VNet injection, Unity Catalog, Azure AD SSO, private link</td>
+        </tr>
+        <tr>
+          <td>ADLS Gen2</td>
+          <td class="cost-standard">$50</td>
+          <td class="cost-premium">$90</td>
+          <td class="cost-delta">+$40</td>
+          <td>Private endpoint, Customer-Managed Keys, RA-GRS geo-redundancy</td>
+        </tr>
+        <tr>
+          <td>Azure Synapse Serverless</td>
+          <td class="cost-standard">$20</td>
+          <td class="cost-premium">$50</td>
+          <td class="cost-delta">+$30</td>
+          <td>Managed VNet, private endpoints, CMK, Purview integration</td>
+        </tr>
+        <tr>
+          <td>Azure Stream Analytics</td>
+          <td class="cost-standard">$60</td>
+          <td class="cost-premium">$60</td>
+          <td style="color:var(--text-muted);">—</td>
+          <td>Dedykowany klaster (private) = $800/m — zastąpiony Databricks Streaming</td>
+        </tr>
+        <tr>
+          <td>PowerBI</td>
+          <td class="cost-standard">$150 <span style="font-size:0.65rem; opacity:0.7">(Pro, 15u)</span></td>
+          <td class="cost-premium">$600 <span style="font-size:0.65rem; opacity:0.7">(PPU, 30u)</span></td>
+          <td class="cost-delta">+$450</td>
+          <td>Paginated reports, deployment pipelines, XMLA endpoint, on-prem gateway</td>
+        </tr>
+        <tr>
+          <td>Key Vault + Private DNS + Monitor</td>
+          <td class="cost-standard">—</td>
+          <td class="cost-premium">$35</td>
+          <td class="cost-delta">+$35</td>
+          <td>CMK dla wszystkich usług, private DNS resolution, platform alerting</td>
+        </tr>
+        <tr class="total-row">
+          <td>Łącznie / miesiąc</td>
+          <td class="cost-standard">~$860</td>
+          <td class="cost-premium">~$2 035</td>
+          <td class="cost-delta">+$1 175</td>
+          <td></td>
+        </tr>
+        <tr class="total-row">
+          <td>Łącznie / rok</td>
+          <td class="cost-standard">~$10 300</td>
+          <td class="cost-premium">~$24 400</td>
+          <td class="cost-delta">+$14 100</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- FAZY WDROŻENIA -->
+<div class="section">
+  <div class="section-title">Fazy wdrożenia — Man-Days</div>
+  <div class="phases">
+
+    <div class="phase-box">
+      <div class="phase-header">
+        <div class="phase-title">Faza 1 — Infrastruktura Azure (IaC, networking, IAM)</div>
+        <div class="phase-md" style="color:#50e6ff;">68 MD</div>
+      </div>
+      <div class="phase-table">
+        <table>
+          <tbody>
+            <tr><td>Terraform modules: Event Hubs, ADLS, Databricks, Synapse, Key Vault</td><td>20</td></tr>
+            <tr><td>VNet, private endpoints, private DNS zones (6+ usług)</td><td>12</td></tr>
+            <tr><td>RBAC design + Azure AD groups + service principals</td><td>8</td></tr>
+            <tr><td>Customer-Managed Keys (Key Vault + rotation policy)</td><td>5</td></tr>
+            <tr><td>CI/CD pipeline (Azure DevOps) dla IaC</td><td>8</td></tr>
+            <tr><td>Środowiska dev / staging / prod</td><td>15</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="phase-box">
+      <div class="phase-header">
+        <div class="phase-title">Faza 2 — Warstwa klastrów (Trivy + Falco + producenci)</div>
+        <div class="phase-md" style="color:#86efac;">77 MD</div>
+      </div>
+      <div class="phase-table">
+        <table>
+          <tbody>
+            <tr><td>Helm charts: Trivy Operator + konfiguracja per środowisko</td><td>8</td></tr>
+            <tr><td>Helm charts: Falco + Falcosidekick (output Kafka → Event Hubs)</td><td>8</td></tr>
+            <tr><td>Falco rules tuning — allowlist dla znanych operatorów, eliminacja szumu</td><td>20</td></tr>
+            <tr><td>Kafka Producer CronJob (VulnReports → Event Hubs)</td><td>6</td></tr>
+            <tr><td>Fluent Bit (audit logi → Event Hubs)</td><td>5</td></tr>
+            <tr><td>GitOps setup (ArgoCD/Flux) + application sets per klaster</td><td>10</td></tr>
+            <tr><td>Pilot deployment (1× AKS, 1× GKE, 1× on-prem) + walidacja</td><td>12</td></tr>
+            <tr><td>Staged rollout plan + dokumentacja operacyjna</td><td>8</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="phase-box">
+      <div class="phase-header">
+        <div class="phase-title">Faza 3 — Data Pipeline (Databricks + Stream Analytics)</div>
+        <div class="phase-md" style="color:#fb923c;">119 MD</div>
+      </div>
+      <div class="phase-table">
+        <table>
+          <tbody>
+            <tr><td>Schema design: Bronze/Silver/Gold dla CVE, runtime, audit</td><td>8</td></tr>
+            <tr><td>Unity Catalog setup: namespaces, access control, data lineage</td><td>6</td></tr>
+            <tr><td>CVE Enrichment Job: deduplikacja, normalizacja, join CMDB</td><td>18</td></tr>
+            <tr><td>CVE Aggregation Job: Bronze→Silver→Gold, compliance scores</td><td>15</td></tr>
+            <tr><td>Audit Analysis Job: join VulnReport + audit log (kto deployował)</td><td>10</td></tr>
+            <tr><td>Stream Analytics: CRITICAL filter + allowlist → sec.alerts.critical</td><td>8</td></tr>
+            <tr><td>SIEM connector (sec.alerts.critical → Splunk/QRadar)</td><td>8</td></tr>
+            <tr><td>Delta Lake optimization: Z-ordering, bloom filters, liquid clustering</td><td>6</td></tr>
+            <tr><td>Error handling, dead-letter queues, retry logic</td><td>8</td></tr>
+            <tr><td>Unit testy Spark jobs + integration testy end-to-end</td><td>24</td></tr>
+            <tr><td>Performance testy (symulacja 5× wolumenu CVE)</td><td>8</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="phase-box">
+      <div class="phase-header">
+        <div class="phase-title">Faza 4 — Reporting i dashboardy</div>
+        <div class="phase-md" style="color:#f2c811;">58 MD</div>
+      </div>
+      <div class="phase-table">
+        <table>
+          <tbody>
+            <tr><td>Synapse Serverless SQL views na Gold layer</td><td>8</td></tr>
+            <tr><td>PowerBI data model design</td><td>6</td></tr>
+            <tr><td>PowerBI dashboardy (CVE heatmapa, compliance score, trend, Falco alert rate)</td><td>18</td></tr>
+            <tr><td>Row-Level Security: team owner widzi tylko swoje klastry</td><td>6</td></tr>
+            <tr><td>Synapse Pipeline: tygodniowy CSV/Excel export + Logic App (e-mail/Teams)</td><td>10</td></tr>
+            <tr><td>UAT z security teamem + iteracje</td><td>10</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="phase-box">
+      <div class="phase-header">
+        <div class="phase-title">Faza 5 — Testy, bezpieczeństwo, go-live</div>
+        <div class="phase-md" style="color:#c4b5fd;">70 MD</div>
+      </div>
+      <div class="phase-table">
+        <table>
+          <tbody>
+            <tr><td>Security review: IAM audit, data flow, private endpoints</td><td>10</td></tr>
+            <tr><td>Disaster recovery test: Event Hubs failover, ADLS restore</td><td>8</td></tr>
+            <tr><td>Load test: wszystkie klastry wysyłają jednocześnie (initial scan surge)</td><td>8</td></tr>
+            <tr><td>Azure Monitor alerting dla health pipeline'u</td><td>6</td></tr>
+            <tr><td>Runbooks operacyjne (upgrade Falco, rotacja kluczy, skalowanie)</td><td>10</td></tr>
+            <tr><td>Handover + szkolenie ops teamu</td><td>8</td></tr>
+            <tr><td>Project management (cały czas trwania projektu)</td><td>20</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="phase-box" style="border-color:#4338ca; background:#0f0d1f;">
+      <div class="phase-header" style="border-bottom-color:#2a2550;">
+        <div class="phase-title" style="color:#c4b5fd;">ŁĄCZNIE</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="phase-md" style="color:var(--text-muted);">392 MD base</div>
+          <div class="phase-md" style="color:#c4b5fd; font-size:1rem;">~450 MD z buforem 15%</div>
+        </div>
+      </div>
+      <div class="phase-table">
+        <table>
+          <tbody>
+            <tr><td>Faza 1 — Infrastruktura</td><td style="color:#50e6ff;">68</td></tr>
+            <tr><td>Faza 2 — Klastry</td><td style="color:#86efac;">77</td></tr>
+            <tr><td>Faza 3 — Data Pipeline</td><td style="color:#fb923c;">119</td></tr>
+            <tr><td>Faza 4 — Reporting</td><td style="color:#f2c811;">58</td></tr>
+            <tr><td>Faza 5 — Testy + go-live</td><td style="color:#c4b5fd;">70</td></tr>
+            <tr class="total-row"><td>Base total</td><td>392 MD</td></tr>
+            <tr class="total-row"><td>Z buforem 15%</td><td>~450 MD</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TEAM -->
+<div class="section">
+  <div class="section-title">Skład zespołu</div>
+  <div class="cost-table-wrap">
+    <table>
+      <thead><tr><th>Rola</th><th>Liczba</th><th>Główne fazy</th><th>MD</th><th>Kluczowe zadania</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Cloud / Platform Engineer</td>
+          <td>2</td>
+          <td><span class="role-badge" style="background:#0a1220;color:#50e6ff;border:1px solid #1d4ed8;">1, 5</span></td>
+          <td>80</td>
+          <td>Terraform, VNet, private endpoints, IAM, disaster recovery</td>
+        </tr>
+        <tr>
+          <td>Data Engineer</td>
+          <td>3</td>
+          <td><span class="role-badge" style="background:#1a0e00;color:#fb923c;border:1px solid #92400e;">1, 3, 4</span></td>
+          <td>135</td>
+          <td>Spark jobs, Delta Lake, schema design, Synapse views, Unity Catalog</td>
+        </tr>
+        <tr>
+          <td>K8s / DevOps Engineer</td>
+          <td>2</td>
+          <td><span class="role-badge" style="background:#0a1a0a;color:#86efac;border:1px solid #166534;">2, 5</span></td>
+          <td>90</td>
+          <td>Trivy Helm, Falco Helm, GitOps rollout, Fluent Bit, CronJob producer</td>
+        </tr>
+        <tr>
+          <td>Security Engineer</td>
+          <td>1</td>
+          <td><span class="role-badge" style="background:#1a0808;color:#fca5a5;border:1px solid #991b1b;">2, 5</span></td>
+          <td>45</td>
+          <td>Falco rules tuning, allowlists, security review, IAM audit, SIEM integration</td>
+        </tr>
+        <tr>
+          <td>BI Developer</td>
+          <td>1</td>
+          <td><span class="role-badge" style="background:#1a1500;color:#fbbf24;border:1px solid #78350f;">4</span></td>
+          <td>40</td>
+          <td>PowerBI data model, dashboardy, Row-Level Security, UAT</td>
+        </tr>
+        <tr>
+          <td>QA / Performance Engineer</td>
+          <td>1</td>
+          <td><span class="role-badge" style="background:#130a20;color:#c4b5fd;border:1px solid #5b21b6;">3, 5</span></td>
+          <td>40</td>
+          <td>Unit testy Spark, integration testy, load test, performance profiling</td>
+        </tr>
+        <tr>
+          <td>Project Manager</td>
+          <td>1</td>
+          <td><span class="role-badge" style="background:#0f0f1f;color:#93c5fd;border:1px solid #1d4ed8;">all</span></td>
+          <td>20</td>
+          <td>Koordynacja, stakeholder management, risk tracking, dokumentacja projektu</td>
+        </tr>
+        <tr class="total-row">
+          <td>Razem</td>
+          <td>11 osób</td>
+          <td></td>
+          <td>~450 MD</td>
+          <td>Peak: ~8 osób równolegle w Fazie 3</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="section">
+  <div class="section-title">Timeline — 7–9 miesięcy</div>
+  <div class="timeline-wrap">
+    <div class="tl-months">
+      <div class="tl-month-label">M1</div>
+      <div class="tl-month-label">M2</div>
+      <div class="tl-month-label">M3</div>
+      <div class="tl-month-label">M4</div>
+      <div class="tl-month-label">M5</div>
+      <div class="tl-month-label">M6</div>
+      <div class="tl-month-label">M7</div>
+      <div class="tl-month-label">M8</div>
+      <div class="tl-month-label">M9</div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-label" style="color:#50e6ff;">Faza 1 — Infrastruktura</div>
+      <div class="tl-bar-wrap">
+        <div class="tl-cell" style="background:#1d4ed8;"></div>
+        <div class="tl-cell" style="background:#1d4ed8;"></div>
+        <div class="tl-cell" style="background:#1e3a8a; opacity:0.5;"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-label" style="color:#86efac;">Faza 2 — Klastry</div>
+      <div class="tl-bar-wrap">
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell" style="background:#166534; opacity:0.5;"></div>
+        <div class="tl-cell" style="background:#166534;"></div>
+        <div class="tl-cell" style="background:#166534;"></div>
+        <div class="tl-cell" style="background:#14532d; opacity:0.4;"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-label" style="color:#fb923c;">Faza 3 — Data Pipeline</div>
+      <div class="tl-bar-wrap">
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell" style="background:#92400e; opacity:0.5;"></div>
+        <div class="tl-cell" style="background:#c2410c;"></div>
+        <div class="tl-cell" style="background:#c2410c;"></div>
+        <div class="tl-cell" style="background:#c2410c;"></div>
+        <div class="tl-cell" style="background:#78350f; opacity:0.5;"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-label" style="color:#f2c811;">Faza 4 — Reporting</div>
+      <div class="tl-bar-wrap">
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell" style="background:#854d0e; opacity:0.5;"></div>
+        <div class="tl-cell" style="background:#a16207;"></div>
+        <div class="tl-cell" style="background:#a16207;"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-label" style="color:#c4b5fd;">Faza 5 — Testy + go-live</div>
+      <div class="tl-bar-wrap">
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell tl-empty"></div>
+        <div class="tl-cell" style="background:#4338ca; opacity:0.5;"></div>
+        <div class="tl-cell" style="background:#4338ca;"></div>
+        <div class="tl-cell" style="background:#4338ca;"></div>
+        <div class="tl-cell" style="background:#312e81; opacity:0.5;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TCO -->
+<div class="section">
+  <div class="section-title">TCO — Total Cost of Ownership</div>
+  <div class="tco-row">
+    <div class="tco-box" style="border-color:#2e3350;">
+      <h3 style="color:#93c5fd;">Wariant Standard</h3>
+      <div class="tco-line"><span class="tco-line-label">Wdrożenie (450 MD × 2 000 PLN)</span><span class="tco-line-value">900 000 PLN</span></div>
+      <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$10 300)</span><span class="tco-line-value">~47 000 PLN</span></div>
+      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#93c5fd;">~947 000 PLN</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#93c5fd;">~47 000 PLN/rok</span></div>
+    </div>
+    <div class="tco-box" style="border-color:#166534;">
+      <h3 style="color:#86efac;">Wariant Private / Premium</h3>
+      <div class="tco-line"><span class="tco-line-label">Wdrożenie (450 MD × 2 000 PLN)</span><span class="tco-line-value">900 000 PLN</span></div>
+      <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$24 400)</span><span class="tco-line-value">~112 000 PLN</span></div>
+      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#86efac;">~1 012 000 PLN</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#86efac;">~112 000 PLN/rok</span></div>
+    </div>
+    <div class="tco-box" style="border-color:#991b1b;">
+      <h3 style="color:#f87171;">Benchmark — Komercyjny CNAPP</h3>
+      <div class="tco-line"><span class="tco-line-label">Wiz / Prisma Cloud (3 950 nodów)</span><span class="tco-line-value">$400k–800k/rok</span></div>
+      <div class="tco-line"><span class="tco-line-label">~1 800 000–3 600 000 PLN/rok</span><span class="tco-line-value"></span></div>
+      <div class="tco-total"><span>Break-even (Standard)</span><span style="color:#f87171;">Rok 3–4</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Break-even (Private/Premium)</span><span class="tco-line-value" style="color:#f87171;">Rok 5–6</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- RISK -->
+<div class="section">
+  <div class="section-title">Ryzyka kosztowe</div>
+  <div class="cost-table-wrap">
+    <table>
+      <thead><tr><th>Ryzyko</th><th>Wpływ na koszt</th><th>Prawdopodobieństwo</th><th>Mitygacja</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Falco bez tuningu — 10–100× więcej eventów</td>
+          <td class="risk-high">+$200–600/m Azure</td>
+          <td><span class="risk-dot" style="background:#ef4444;"></span><span class="risk-high">Wysokie</span></td>
+          <td>20 MD dedykowane na tuning w Fazie 2</td>
+        </tr>
+        <tr>
+          <td>Trivy pełny dzienny rescan wszystkich obrazów</td>
+          <td class="risk-mid">+$200–400/m Azure</td>
+          <td><span class="risk-dot" style="background:#eab308;"></span><span class="risk-mid">Średnie</span></td>
+          <td>Konfiguracja skanowania tylko przy zmianie + weekly full</td>
+        </tr>
+        <tr>
+          <td>PowerBI Premium P1 zamiast PPU</td>
+          <td class="risk-high">+$4 400/m (+$52k/rok)</td>
+          <td><span class="risk-dot" style="background:#eab308;"></span><span class="risk-mid">Niskie</span></td>
+          <td>PPU wystarczy dla ≤300 użytkowników — wymaganie formalne</td>
+        </tr>
+        <tr>
+          <td>Databricks all-purpose clusters zamiast job clusters</td>
+          <td class="risk-high">×3–5 kosztu compute</td>
+          <td><span class="risk-dot" style="background:#ef4444;"></span><span class="risk-high">Wysokie (błąd konfiguracji)</span></td>
+          <td>Polityka: wymuszenie job clusters z auto-termination w konfiguracji workspace</td>
+        </tr>
+        <tr>
+          <td>Problemy kompatybilności przy rollout na 79 klastrów</td>
+          <td class="risk-mid">+20–40 MD</td>
+          <td><span class="risk-dot" style="background:#eab308;"></span><span class="risk-mid">Średnie</span></td>
+          <td>Pilot na 3 klastrach (1 per typ) przed masowym rollout</td>
+        </tr>
+        <tr>
+          <td>Zmiana wymagań SIEM w trakcie projektu</td>
+          <td class="risk-low">+10–20 MD</td>
+          <td><span class="risk-dot" style="background:#10b981;"></span><span class="risk-low">Niskie</span></td>
+          <td>Kafka jako bufor — zmiana consumera SIEM bez zmian upstream</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr>
+<footer>
+  K8s Security Monitoring · Raport Kosztowy · Trivy + Falco → Azure Event Hubs → Databricks → ADLS Gen2 → Synapse → PowerBI<br>
+  Środowisko: 3 950 nodów · multi-cloud · private deployment · scenariusz 5× CVE
+</footer>
+
+</body>
+</html>

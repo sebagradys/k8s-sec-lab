@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K8s Security — Azure Streaming Architecture</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #22263a;
+      --border: #2e3350;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --az-blue: #0078d4;
+      --az-light: #50e6ff;
+      --az-mid: #2899f5;
+      --eventhub: #e36c00;
+      --synapse: #0097b2;
+      --databricks: #ff3621;
+      --pbi: #f2c811;
+      --stream: #0f6cbd;
+      --green: #10b981;
+      --teal: #14b8a6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px 24px;
+    }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 28px; }
+
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.64rem;
+      background: var(--bg3);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: var(--text);
+    }
+
+    /* LEGEND */
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 30px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-muted); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* LAYER */
+    .layer { margin-bottom: 8px; }
+    .layer-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+    .layer-row { display: flex; gap: 10px; align-items: stretch; }
+
+    /* CLUSTER */
+    .cluster {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--bg2);
+    }
+    .cluster-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge {
+      font-size: 0.62rem;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-aks  { background: #0c1a2e; color: var(--az-light); border: 1px solid var(--az-blue); }
+    .badge-arc  { background: #0a1f1a; color: #6ee7b7; border: 1px solid var(--arc); }
+    .badge-gke  { background: #1a3a5c; color: #60a5fa; }
+    .badge-prem { background: #1f2d1a; color: #86efac; }
+
+    .tools-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .tool {
+      flex: 1;
+      border-radius: 6px;
+      padding: 7px 9px;
+      text-align: center;
+      border: 1px solid transparent;
+    }
+    .tool-name { font-size: 0.74rem; font-weight: 700; margin-bottom: 1px; }
+    .tool-desc { font-size: 0.63rem; opacity: 0.75; line-height: 1.3; }
+    .tool-trivy    { background: #1c2a1c; border-color: #166534; color: #86efac; }
+    .tool-falco    { background: #1c1c2e; border-color: #4338ca; color: #a5b4fc; }
+    .tool-producer { background: #1a1208; border-color: #92400e; color: #fcd34d; }
+    .tool-arc      { background: #0a1f1a; border-color: var(--arc); color: #6ee7b7; }
+
+    .cluster-note {
+      font-size: 0.67rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 7px;
+      margin-top: 7px;
+      line-height: 1.6;
+    }
+
+    /* TAGS */
+    .tag {
+      display: inline-block;
+      font-size: 0.63rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin: 2px 2px 0 0;
+      font-weight: 600;
+    }
+    .tag-orange { background: #1a0e00; color: #fb923c; }
+    .tag-blue   { background: #0c1a2e; color: var(--az-light); }
+    .tag-cyan   { background: #071015; color: #22d3ee; }
+    .tag-yellow { background: #1a1500; color: var(--pbi); }
+    .tag-green  { background: #0a1a0a; color: #86efac; }
+    .tag-red    { background: #1a0800; color: #fca5a5; }
+    .tag-purple { background: #130a20; color: #c084fc; }
+    .tag-arc    { background: #0a1f1a; color: #6ee7b7; }
+
+    /* SERVICE BOX */
+    .svc-box {
+      border-radius: 10px;
+      padding: 14px 16px;
+      border: 1px solid;
+    }
+    .svc-box h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+    .svc-sub { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; }
+    .svc-managed {
+      float: right;
+      font-size: 0.62rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+      background: #0c1a2e;
+      border: 1px solid var(--az-blue);
+      color: var(--az-light);
+      margin-top: -2px;
+    }
+
+    .box-arc        { background: #071510; border-color: var(--arc); }
+    .box-arc h3     { color: #6ee7b7; }
+    .box-eventhub   { background: #120a00; border-color: var(--eventhub); }
+    .box-eventhub h3 { color: #fb923c; }
+    .box-stream     { background: #08111a; border-color: var(--stream); }
+    .box-stream h3  { color: #60a5fa; }
+    .box-databricks { background: #130600; border-color: #c0281a; }
+    .box-databricks h3 { color: #ff8a80; }
+    .box-lake       { background: #060e14; border-color: var(--synapse); }
+    .box-lake h3    { color: #22d3ee; }
+    .box-synapse    { background: #060d14; border-color: #0e7490; }
+    .box-synapse h3 { color: #38bdf8; }
+    .box-pbi        { background: #131000; border-color: #a38910; }
+    .box-pbi h3     { color: var(--pbi); }
+
+    /* TOPICS */
+    .topics-row { display: flex; gap: 8px; margin-top: 10px; }
+    .topic {
+      flex: 1;
+      border-radius: 7px;
+      padding: 9px 11px;
+      border: 1px solid;
+    }
+    .topic-name { font-size: 0.7rem; font-weight: 700; font-family: 'SF Mono', monospace; margin-bottom: 3px; }
+    .topic-desc { font-size: 0.66rem; line-height: 1.4; }
+    .topic-meta { font-size: 0.61rem; margin-top: 5px; opacity: 0.6; }
+    .topic-cve   { background: #0d1f12; border-color: #166534; color: #86efac; }
+    .topic-cve .topic-desc { color: #6ee7b7; }
+    .topic-rt    { background: #10101f; border-color: #4338ca; color: #a5b4fc; }
+    .topic-rt .topic-desc { color: #c7d2fe; }
+    .topic-alert { background: #1f0d0d; border-color: #991b1b; color: #fca5a5; }
+    .topic-audit { background: #0c1118; border-color: #1d4ed8; color: #93c5fd; }
+
+    /* PROCESSING ROW */
+    .proc-row { display: flex; gap: 10px; }
+    .proc-box {
+      flex: 1;
+      border-radius: 9px;
+      padding: 12px 14px;
+      border: 1px solid;
+    }
+    .proc-box h4 { font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; }
+    .proc-box p  { font-size: 0.7rem; color: var(--text-muted); line-height: 1.5; }
+    .proc-box ul { list-style: none; padding: 0; margin-top: 6px; }
+    .proc-box ul li { font-size: 0.68rem; color: var(--text-muted); padding: 1px 0; }
+    .proc-box ul li::before { content: '· '; color: var(--text); }
+
+    .proc-stream    { background: #08111a; border-color: var(--stream); }
+    .proc-stream h4 { color: #60a5fa; }
+    .proc-databricks    { background: #130600; border-color: #c0281a; }
+    .proc-databricks h4 { color: #ff8a80; }
+
+    /* MEDALLION */
+    .medals { display: flex; gap: 8px; margin-top: 10px; }
+    .medal { flex: 1; border-radius: 7px; padding: 10px 12px; border: 1px solid; }
+    .medal-title { font-size: 0.8rem; font-weight: 800; margin-bottom: 2px; }
+    .medal-sub   { font-size: 0.63rem; margin-bottom: 5px; opacity: 0.75; font-weight: 600; }
+    .medal-desc  { font-size: 0.67rem; color: var(--text-muted); line-height: 1.5; }
+    .medal-tech  { font-size: 0.61rem; margin-top: 5px; opacity: 0.55; }
+    .medal-bronze { background: #1a1008; border-color: #92400e; }
+    .medal-bronze .medal-title { color: #cd7f32; }
+    .medal-silver { background: #121212; border-color: #6b7280; }
+    .medal-silver .medal-title { color: #d1d5db; }
+    .medal-gold   { background: #131006; border-color: #854d0e; }
+    .medal-gold .medal-title { color: #fbbf24; }
+
+    /* OUTPUT */
+    .output-row { display: flex; gap: 10px; }
+    .output-box { flex: 1; border-radius: 10px; padding: 13px 15px; border: 1px solid; }
+    .output-box h3 { font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; }
+    .output-box ul { list-style: none; padding: 0; }
+    .output-box ul li { font-size: 0.71rem; color: var(--text-muted); padding: 2px 0; line-height: 1.5; }
+    .output-box ul li::before { content: '→ '; color: var(--text); }
+
+    .out-pbi  { background: #131000; border-color: #a38910; }
+    .out-pbi h3 { color: var(--pbi); }
+    .out-csv  { background: #071510; border-color: #166534; }
+    .out-csv h3 { color: #86efac; }
+    .out-siem { background: #100f20; border-color: #4338ca; }
+    .out-siem h3 { color: #a5b4fc; }
+
+    /* ARROWS */
+    .connectors { display: flex; gap: 10px; margin: 5px 0; }
+    .connector  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .conn-line  { width: 1px; }
+    .conn-label { font-size: 0.62rem; text-align: center; line-height: 1.3; margin-top: 2px; }
+
+    .arrow-row  { display: flex; gap: 10px; margin: 5px 0; }
+    .arrow-cell { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .v-line     { width: 1px; height: 20px; }
+    .v-arrow    { font-size: 9px; line-height: 1; }
+
+    /* NOTES */
+    .notes { display: flex; flex-direction: column; gap: 8px; }
+    .note {
+      padding: 9px 13px;
+      border-radius: 6px;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      border-left: 2px solid;
+      background: var(--bg3);
+      line-height: 1.6;
+    }
+    .note strong { color: var(--text); }
+
+    /* ARC BANNER */
+    .arc-banner {
+      background: #071510;
+      border: 1px solid var(--arc);
+      border-radius: 8px;
+      padding: 9px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .arc-banner-title { font-size: 0.8rem; font-weight: 700; color: #6ee7b7; white-space: nowrap; }
+    .arc-banner-desc  { font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+
+    hr { border: none; border-top: 1px dashed var(--border); margin: 20px 0 16px; }
+    footer { font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 8px; }
+
+    /* VS open source table */
+    .vs-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .vs-table th { color: var(--text-muted); font-weight: 600; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; }
+    .vs-table td { padding: 6px 10px; border-bottom: 1px solid var(--bg3); color: var(--text-muted); vertical-align: top; }
+    .vs-table td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
+    .vs-table td code { font-size: 0.63rem; }
+  </style>
+</head>
+<body>
+
+<h1>Architektura Azure — K8s Security Monitoring</h1>
+<p class="subtitle">Trivy + Falco na klastrach (GKE · AKS · on-prem) · Azure Event Hubs · Stream Analytics · Databricks · ADLS Gen2 · Synapse · PowerBI</p>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#86efac"></div> CVE pipeline (Trivy → Event Hubs → Data Lake)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a5b4fc"></div> Runtime pipeline (Falco → Event Hubs → SIEM)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div> Azure Event Hubs — Kafka-compatible managed bus</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div> ADLS Gen2 + Delta Lake — Medallion</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f2c811"></div> PowerBI — dashboardy + CSV/Excel</div>
+</div>
+
+<!-- ══ LAYER 1: CLUSTERS ══ -->
+<div class="layer">
+  <div class="layer-label">Warstwa klastrów — Trivy + Falco identycznie na każdym klastrze, niezależnie od dostawcy</div>
+  <div class="layer-row">
+
+    <div class="cluster">
+      <div class="cluster-title">AKS <span class="badge badge-aks">Azure</span></div>
+      <div class="tools-row">
+        <div class="tool tool-trivy">
+          <div class="tool-name">Trivy Operator</div>
+          <div class="tool-desc">VulnerabilityReports CRDs</div>
+        </div>
+        <div class="tool tool-falco">
+          <div class="tool-name">Falco + Falcosidekick</div>
+          <div class="tool-desc">runtime events → Event Hubs</div>
+        </div>
+      </div>
+      <div class="tools-row">
+        <div class="tool tool-producer">
+          <div class="tool-name">Kafka Producer (CronJob)</div>
+          <div class="tool-desc">VulnReports JSON → sec.cve.raw</div>
+        </div>
+        <div class="tool tool-producer">
+          <div class="tool-name">Fluent Bit</div>
+          <div class="tool-desc">K8s audit logs → sec.audit.raw</div>
+        </div>
+      </div>
+      <div class="cluster-note">
+        Falcosidekick: output = <code>kafka</code>, broker = <code>eventhubs.servicebus.windows.net:9093</code>, SASL/TLS.<br>
+        Custom fields: <code>cluster=aks-prod-we</code>, <code>env=production</code>, <code>cloud=azure</code>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="cluster-title">GKE <span class="badge badge-gke">GCP</span></div>
+      <div class="tools-row">
+        <div class="tool tool-trivy">
+          <div class="tool-name">Trivy Operator</div>
+          <div class="tool-desc">VulnerabilityReports CRDs</div>
+        </div>
+        <div class="tool tool-falco">
+          <div class="tool-name">Falco + Falcosidekick</div>
+          <div class="tool-desc">runtime events → Event Hubs</div>
+        </div>
+      </div>
+      <div class="tools-row">
+        <div class="tool tool-producer">
+          <div class="tool-name">Kafka Producer (CronJob)</div>
+          <div class="tool-desc">VulnReports JSON → sec.cve.raw</div>
+        </div>
+        <div class="tool tool-producer">
+          <div class="tool-name">Fluent Bit</div>
+          <div class="tool-desc">K8s audit logs → sec.audit.raw</div>
+        </div>
+      </div>
+      <div class="cluster-note">
+        Identyczna konfiguracja jak AKS — Event Hubs akceptuje Kafka API z dowolnego miejsca przez HTTPS.<br>
+        Custom fields: <code>cluster=gke-prod-eu</code>, <code>cloud=gcp</code>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="cluster-title">On-Premises <span class="badge badge-prem">On-Prem</span></div>
+      <div class="tools-row">
+        <div class="tool tool-trivy">
+          <div class="tool-name">Trivy Operator</div>
+          <div class="tool-desc">VulnerabilityReports CRDs</div>
+        </div>
+        <div class="tool tool-falco">
+          <div class="tool-name">Falco + Falcosidekick</div>
+          <div class="tool-desc">runtime events → Event Hubs</div>
+        </div>
+      </div>
+      <div class="tools-row">
+        <div class="tool tool-producer">
+          <div class="tool-name">Kafka Producer (CronJob)</div>
+          <div class="tool-desc">VulnReports JSON → sec.cve.raw</div>
+        </div>
+        <div class="tool tool-producer">
+          <div class="tool-name">Fluent Bit</div>
+          <div class="tool-desc">K8s audit logs → sec.audit.raw</div>
+        </div>
+      </div>
+      <div class="cluster-note">
+        Producenci wysyłają przez HTTPS/SASL — brak VPN, brak agentów Azure w klastrze.<br>
+        Custom fields: <code>cluster=onprem-dc1-waw</code>, <code>cloud=onprem</code>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- connectors -->
+<div class="connectors" style="padding: 0 30px;">
+  <div class="connector">
+    <div class="conn-line" style="background:#86efac; height:18px;"></div>
+    <div style="font-size:9px; color:#86efac;">▼</div>
+    <div class="conn-label" style="color:#86efac;">VulnReports JSON<br>→ sec.cve.raw</div>
+  </div>
+  <div class="connector">
+    <div class="conn-line" style="background:#a5b4fc; height:18px;"></div>
+    <div style="font-size:9px; color:#a5b4fc;">▼</div>
+    <div class="conn-label" style="color:#a5b4fc;">Falco alerts<br>→ sec.runtime.raw</div>
+  </div>
+  <div class="connector">
+    <div class="conn-line" style="background:#93c5fd; height:18px;"></div>
+    <div style="font-size:9px; color:#93c5fd;">▼</div>
+    <div class="conn-label" style="color:#93c5fd;">K8s audit logs<br>→ sec.audit.raw</div>
+  </div>
+</div>
+
+<!-- ══ LAYER 2: EVENT HUBS ══ -->
+<div class="layer">
+  <div class="layer-label">Event Bus — Azure Event Hubs (Kafka-compatible, managed)</div>
+  <div class="svc-box box-eventhub">
+    <span class="svc-managed">Azure Managed · 99.95% SLA</span>
+    <h3>Azure Event Hubs</h3>
+    <div class="svc-sub">
+      Drop-in replacement dla Apache Kafka — producenci używają Kafka API bez żadnych zmian w kodzie. Microsoft zarządza brokerami, replikacją i failover. Auto-inflate: automatycznie skaluje przepustowość przy spike'ach (np. inicjalny skan Trivy wielu klastrów naraz).
+    </div>
+    <span class="tag tag-orange">Kafka-compatible API (port 9093)</span>
+    <span class="tag tag-orange">Schema Registry (built-in)</span>
+    <span class="tag tag-orange">Capture → ADLS Gen2 (auto-archiwum)</span>
+    <span class="tag tag-orange">Auto-inflate (auto-scale)</span>
+    <span class="tag tag-orange">Geo-redundancy</span>
+    <div class="topics-row">
+      <div class="topic topic-cve">
+        <div class="topic-name">sec.cve.raw</div>
+        <div class="topic-desc">VulnerabilityReports z Trivy Operator. JSON: CVE ID, severity, image, namespace, cluster, cloud, timestamp.</div>
+        <div class="topic-meta">partitions: 32 · retention: 7d · capture → Bronze</div>
+      </div>
+      <div class="topic topic-rt">
+        <div class="topic-name">sec.runtime.raw</div>
+        <div class="topic-desc">Falco alerts z Falcosidekick. JSON: rule, priority, pod, namespace, cluster, cloud, enriched fields.</div>
+        <div class="topic-meta">partitions: 32 · retention: 3d · capture → Bronze</div>
+      </div>
+      <div class="topic topic-alert">
+        <div class="topic-name">sec.alerts.critical</div>
+        <div class="topic-desc">Output ze Stream Analytics — tylko CRITICAL/HIGH po filtracji i allowliście. Konsumowany przez SIEM.</div>
+        <div class="topic-meta">partitions: 8 · retention: 1d</div>
+      </div>
+      <div class="topic topic-audit">
+        <div class="topic-name">sec.audit.raw</div>
+        <div class="topic-desc">K8s API Server audit logs z Fluent Bit. Kto co zrobił w klastrze — podstawa dla anomaly detection.</div>
+        <div class="topic-meta">partitions: 16 · retention: 7d · capture → Bronze</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- connectors -->
+<div class="connectors" style="padding: 0 10px;">
+  <div class="connector" style="flex:1.5">
+    <div class="conn-line" style="background:#60a5fa; height:18px;"></div>
+    <div style="font-size:9px; color:#60a5fa;">▼</div>
+    <div class="conn-label" style="color:#60a5fa;">sec.runtime.raw → filtracja CRITICAL<br>Stream Analytics SQL query</div>
+  </div>
+  <div class="connector" style="flex:1.5">
+    <div class="conn-line" style="background:#ff8a80; height:18px;"></div>
+    <div style="font-size:9px; color:#ff8a80;">▼</div>
+    <div class="conn-label" style="color:#ff8a80;">sec.cve.raw + sec.audit.raw<br>Databricks Spark Streaming → Bronze</div>
+  </div>
+  <div class="connector" style="flex:1">
+    <div class="conn-line" style="background:#22d3ee; height:18px;"></div>
+    <div style="font-size:9px; color:#22d3ee;">▼</div>
+    <div class="conn-label" style="color:#22d3ee;">Event Hubs Capture<br>(auto) → Bronze ADLS</div>
+  </div>
+</div>
+
+<!-- ══ LAYER 3: PROCESSING ══ -->
+<div class="layer">
+  <div class="layer-label">Warstwa przetwarzania — dwa niezależne joby</div>
+  <div class="proc-row">
+
+    <div class="proc-box proc-stream">
+      <h4>Azure Stream Analytics</h4>
+      <p>Real-time SQL query na strumieniu eventów z Event Hubs. Zero infrastruktury do zarządzania — serverless.</p>
+      <ul>
+        <li>Konsumuje <code>sec.runtime.raw</code> ciągle</li>
+        <li>SQL WHERE: <code>priority IN ('Critical','High')</code></li>
+        <li>Allowlist: wyklucza znane operatory (Trivy, Kubescape, Arc agents) przez reference data join</li>
+        <li>Output: <code>sec.alerts.critical</code> → do SIEM consumera</li>
+        <li>Drugie query: aggregate alert counts per cluster per 5min → ADLS Silver</li>
+        <li>Latency: &lt;1s od eventu do alertu w SIEM</li>
+      </ul>
+    </div>
+
+    <div class="proc-box proc-databricks">
+      <h4>Azure Databricks — Spark Streaming + Batch</h4>
+      <p>Złożone przetwarzanie, enrichment i budowanie Medallion layers na ADLS Gen2.</p>
+      <ul>
+        <li><strong style="color:#ff8a80;">CVE Enrichment Job (micro-batch 1h):</strong> deduplikacja tych samych CVE z wielu klastrów, join z CMDB (team owner per namespace), normalizacja severity → Silver</li>
+        <li><strong style="color:#ff8a80;">CVE Aggregation Job (batch 4h):</strong> counts per cluster/severity/namespace/image, compliance score (% bez CRITICAL), trend 7d/30d → Gold</li>
+        <li><strong style="color:#ff8a80;">Audit Enrichment (batch daily):</strong> kto deployował podatny obraz? join VulnReport + audit log → Silver</li>
+        <li>Unity Catalog: governance danych, data lineage, access control per team</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- connectors -->
+<div class="connectors" style="padding: 0 10px;">
+  <div class="connector">
+    <div class="conn-line" style="background:#22d3ee; height:18px;"></div>
+    <div style="font-size:9px; color:#22d3ee;">▼</div>
+    <div class="conn-label" style="color:#22d3ee;">Stream Analytics + Databricks<br>→ Bronze / Silver / Gold</div>
+  </div>
+  <div class="connector">
+    <div class="conn-line" style="background:#a5b4fc; height:18px;"></div>
+    <div style="font-size:9px; color:#a5b4fc;">▼</div>
+    <div class="conn-label" style="color:#a5b4fc;">sec.alerts.critical<br>→ SIEM consumer</div>
+  </div>
+</div>
+
+<!-- ══ LAYER 4: DATA LAKE ══ -->
+<div class="layer">
+  <div class="layer-label">Data Lake — ADLS Gen2 + Delta Lake (Medallion Architecture)</div>
+  <div class="svc-box box-lake">
+    <span class="svc-managed">Azure Managed · hierarchical namespace · ACLs</span>
+    <h3>Azure Data Lake Storage Gen2 + Delta Lake</h3>
+    <div class="svc-sub">
+      Centralny storage dla wszystkich danych security. Delta Lake format (open source, natywny w Databricks) zapewnia ACID transakcje, time travel (możesz odpytać stan CVE sprzed 30 dni), schema evolution i Z-ordering dla szybkich queries w PowerBI.
+    </div>
+    <div class="medals">
+      <div class="medal medal-bronze">
+        <div class="medal-title">🥉 Bronze</div>
+        <div class="medal-sub">Raw — dane jak przyszły</div>
+        <div class="medal-desc">
+          JSON z Event Hubs (auto przez Capture lub Databricks). Pełna historia, bez transformacji. Pozwala reprocessować gdy zmienią się reguły.
+        </div>
+        <div class="medal-tech">Parquet · partition: year/month/day/cluster · retention 1 rok</div>
+      </div>
+      <div class="medal medal-silver">
+        <div class="medal-title">🥈 Silver</div>
+        <div class="medal-sub">Cleaned + enriched</div>
+        <div class="medal-desc">
+          Ujednolicony schemat CVE. Deduplikacja tego samego CVE w wielu klastrach. Join z CMDB: który team owns namespace. Join audit log: kto deployował podatny obraz.
+        </div>
+        <div class="medal-tech">Delta Lake · Z-ordering: severity, cluster · retention 2 lata</div>
+      </div>
+      <div class="medal medal-gold">
+        <div class="medal-title">🥇 Gold</div>
+        <div class="medal-sub">Aggregated — gotowe dla PowerBI</div>
+        <div class="medal-desc">
+          CVE counts per klaster/severity/namespace, compliance score, trend 7d/30d/90d, top vulnerable images. Zoptymalizowane pod DirectQuery z PowerBI.
+        </div>
+        <div class="medal-tech">Delta Lake · bloom filters · liquid clustering · retention 5 lat</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- connectors -->
+<div class="connectors" style="padding: 0 10px; margin-top: 4px;">
+  <div class="connector">
+    <div class="conn-line" style="background:#38bdf8; height:18px;"></div>
+    <div style="font-size:9px; color:#38bdf8;">▼</div>
+    <div class="conn-label" style="color:#38bdf8;">Silver + Gold → Synapse<br>Serverless SQL</div>
+  </div>
+  <div class="connector">
+    <div class="conn-line" style="background:var(--pbi); height:18px;"></div>
+    <div style="font-size:9px; color:var(--pbi);">▼</div>
+    <div class="conn-label" style="color:var(--pbi);">Gold → PowerBI<br>DirectQuery</div>
+  </div>
+  <div class="connector">
+    <div class="conn-line" style="background:#86efac; height:18px;"></div>
+    <div style="font-size:9px; color:#86efac;">▼</div>
+    <div class="conn-label" style="color:#86efac;">Silver → Synapse Pipeline<br>CSV/Excel export</div>
+  </div>
+</div>
+
+<!-- ══ LAYER 5: SERVE + OUTPUTS ══ -->
+<div class="layer">
+  <div class="layer-label">Warstwa serwowania i wyjścia</div>
+
+  <!-- Synapse jako środkowy element -->
+  <div class="svc-box box-synapse" style="margin-bottom: 8px;">
+    <span class="svc-managed">Azure Managed · Serverless SQL · pay-per-query</span>
+    <h3>Azure Synapse Analytics — Serverless SQL Pool</h3>
+    <div class="svc-sub">
+      SQL engine który odpytuje pliki Parquet/Delta Lake na ADLS Gen2 bez ładowania danych. PowerBI łączy się przez Synapse jako SQL endpoint (DirectQuery — zawsze aktualne dane). Synapse Pipeline generuje cykliczny CSV/Excel raport z Silver layer i wysyła przez Logic App na e-mail / Teams / SharePoint.
+    </div>
+    <span class="tag tag-cyan">DirectQuery endpoint dla PowerBI</span>
+    <span class="tag tag-cyan">SQL na Parquet/Delta bez ETL</span>
+    <span class="tag tag-cyan">Synapse Pipeline → CSV/Excel → Logic App</span>
+    <span class="tag tag-cyan">Pay-per-query (TB scanned)</span>
+    <span class="tag tag-cyan">Role-based access: team widzi swoje klastry</span>
+  </div>
+
+  <div class="output-row">
+
+    <div class="output-box out-pbi">
+      <h3>PowerBI — Dashboardy CVE + Compliance</h3>
+      <ul>
+        <li>DirectQuery na Gold layer przez Synapse — dane real-time</li>
+        <li>CVE heatmapa: klaster × severity × namespace</li>
+        <li>Trend 7d/30d/90d: nowe vs remediated CVE</li>
+        <li>Compliance score per klaster i per team</li>
+        <li>Top 10 najbardziej podatnych obrazów w środowisku</li>
+        <li>Runtime alert frequency per klaster i regułę Falco</li>
+        <li>Row-Level Security: team owner widzi tylko swoje</li>
+        <li>Scheduled snapshot → Teams / e-mail</li>
+      </ul>
+    </div>
+
+    <div class="output-box out-csv">
+      <h3>CVE Report — CSV / Excel</h3>
+      <ul>
+        <li>Synapse Pipeline (cron: tygodniowo / miesięcznie)</li>
+        <li>Query na Silver layer: jeden plik, całe środowisko</li>
+        <li>Kolumny: CVE ID, severity, image, cluster, namespace, team_owner, days_open, fixed_version, cvss_score</li>
+        <li>Deduplikacja: ten sam CVE w 100 klastrach = 1 wiersz z listą klastrów</li>
+        <li>Output → ADLS Blob → Logic App → e-mail security team</li>
+        <li>Alternatywnie: SharePoint library (auto-sync)</li>
+      </ul>
+    </div>
+
+    <div class="output-box out-siem">
+      <h3>SIEM — Runtime Alerts</h3>
+      <ul>
+        <li>Consumer topicu <code>sec.alerts.critical</code> (już przefiltrowanego przez Stream Analytics)</li>
+        <li><strong style="color:var(--text);">Splunk</strong> — Kafka Connect plugin lub Splunk Add-on for Event Hubs</li>
+        <li><strong style="color:var(--text);">QRadar</strong> — IBM Event Hubs DSM connector</li>
+        <li><strong style="color:var(--text);">Elastic</strong> — Logstash Event Hubs input plugin</li>
+        <li>Eventy enriched: cluster, namespace, pod, cloud, team_owner</li>
+        <li>Zero false positives — allowlista w Stream Analytics eliminuje szum przed wysłaniem</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<hr>
+
+<!-- VS OPEN SOURCE TABLE -->
+<div class="layer">
+  <div class="layer-label">Mapowanie: open source → Azure managed service</div>
+  <table class="vs-table">
+    <thead>
+      <tr>
+        <th>Rola</th>
+        <th>Open source (poprzedni diagram)</th>
+        <th>Azure managed</th>
+        <th>Co zyskujesz</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CVE scanning</td>
+        <td>Trivy Operator</td>
+        <td>Trivy Operator (bez zmian)</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>Runtime detection</td>
+        <td>Falco + Falcosidekick</td>
+        <td>Falco + Falcosidekick (bez zmian)</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>Event bus</td>
+        <td>Apache Kafka / Redpanda</td>
+        <td>Azure Event Hubs</td>
+        <td>Brak ops, auto-scale, Capture do ADLS, 99.95% SLA</td>
+      </tr>
+      <tr>
+        <td>Stream processing</td>
+        <td>Apache Flink</td>
+        <td>Azure Stream Analytics</td>
+        <td>Serverless, SQL zamiast Java/Scala, zero infrastruktury</td>
+      </tr>
+      <tr>
+        <td>Batch processing</td>
+        <td>Apache Spark (self-hosted)</td>
+        <td>Azure Databricks</td>
+        <td>Managed Spark, Unity Catalog, auto-terminating clusters</td>
+      </tr>
+      <tr>
+        <td>Data lake storage</td>
+        <td>MinIO / S3 / GCS</td>
+        <td>Azure Data Lake Storage Gen2</td>
+        <td>Hierarchical namespace, native ACLs, Azure AD integration</td>
+      </tr>
+      <tr>
+        <td>Table format</td>
+        <td>Apache Iceberg</td>
+        <td>Delta Lake (natywny w Databricks)</td>
+        <td>Głębsza integracja z Databricks i PowerBI</td>
+      </tr>
+      <tr>
+        <td>Query engine</td>
+        <td>Trino / Athena</td>
+        <td>Azure Synapse Serverless SQL</td>
+        <td>Native Azure AD auth, bezpośredni connector PowerBI</td>
+      </tr>
+      <tr>
+        <td>Dashboardy</td>
+        <td>Grafana</td>
+        <td>PowerBI</td>
+        <td>Enterprise-grade, Microsoft 365 integracja, Row-Level Security</td>
+      </tr>
+      <tr>
+        <td>Orchestracja pipeline</td>
+        <td>Apache Airflow / cron</td>
+        <td>Synapse Pipelines / ADF</td>
+        <td>Visual designer, monitoring, retry policies, bez serwera</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<div class="layer">
+  <div class="layer-label">Kluczowe uwagi</div>
+  <div class="notes">
+    <div class="note" style="border-color:var(--eventhub);">
+      <strong>Event Hubs Capture jako "darmowy" Bronze:</strong> Event Hubs ma wbudowaną funkcję Capture — automatycznie zapisuje wszystkie eventy do ADLS Gen2 jako Avro/Parquet bez żadnego kodu. To jest Bronze layer za darmo (płacisz tylko za storage). Databricks zaczyna pracę od Silver.
+    </div>
+    <div class="note" style="border-color:#60a5fa;">
+      <strong>Stream Analytics vs Databricks Streaming:</strong> Stream Analytics jest prostszy i tańszy dla prostego filtrowania (CRITICAL eventy → SIEM). Databricks jest potrzebny dla złożonego enrichmentu (join z CMDB, deduplication CVE). Nie musisz wybierać — oba działają równolegle na tych samych Event Hubs.
+    </div>
+    <div class="note" style="border-color:var(--pbi);">
+      <strong>PowerBI i Delta Lake:</strong> PowerBI Premium / Fabric obsługuje DirectQuery na Delta Lake przez Synapse lub Databricks SQL Warehouse. Bez Premium: Synapse Serverless SQL jako pośrednik (tańsze). Import mode (scheduled refresh) jest najszybszy dla dashboardów ale dane mają max 1h opóźnienie.
+    </div>
+    <div class="note" style="border-color:#f87171;">
+      <strong>Koszt vs open source:</strong> Event Hubs ~$200–500/m (Standard tier, 20 TUs), Databricks ~$500–2000/m (zależy od DBU), Synapse Serverless ~$5/TB queries, ADLS ~$20/TB. Łącznie: ~$1000–3000/m za cały managed stack. Open source jest tańszy w licencjach, droższy w ludziach. Break-even przy braku dedykowanego data engineering teamu.
+    </div>
+  </div>
+</div>
+
+<hr>
+<footer>K8s Security · Azure Streaming Architecture · Trivy + Falco → Event Hubs → Databricks → ADLS Gen2 → Synapse → PowerBI</footer>
+
+</body>
+</html>
