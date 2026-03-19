@@ -195,12 +195,12 @@ Faza 5:                            ████████████
 |--|------------|-------------|-------|
 | **Nasze rozwiązanie (Private/Premium)** | ~150 000 EUR | ~21 200 EUR/rok | Fazy 2–5 + Azure |
 | **Zewnętrzny integrator + Azure** | ~221 200 EUR | ~21 200 EUR/rok | 200 000 EUR integrator + Azure |
-| **Komercyjny CNAPP (benchmark)** | ~1 000 000 EUR | ~1 000 000 EUR/rok | licencja Wiz/Prisma Cloud |
+| **Komercyjny CNAPP (benchmark)** | ~667 000 EUR | ~667 000 EUR/rok | licencja Wiz/Prisma Cloud |
 
 **Oszczędność względem CNAPPa:**
-- Rok 1: ~850 000 EUR
-- Rok 2: ~979 000 EUR
-- Rok 3+: ~979 000 EUR/rok
+- Rok 1: ~517 000 EUR
+- Rok 2: ~646 000 EUR
+- Rok 3+: ~646 000 EUR/rok
 
 Rozwiązanie zwraca się względem CNAPPa **natychmiast — już w roku pierwszym**. Koszt wdrożenia (własny lub przez integratora) jest porównywalny i niższy niż jedna rata roczna licencji komercyjnej.
 
