@@ -16,7 +16,7 @@
 | Prod (50%) | ~1 975 nodów | Trivy + Falco |
 | Dev/Test (50%) | ~1 975 nodów | tylko Trivy |
 
-Szacunkowa liczba klastrów: ~79 (przy średniej 50 nodów/klaster).
+Szacunkowa liczba klastrów: **455** (365 on-prem + 90 cloud AKS/GKE).
 Szacunkowa liczba podów: ~31 600 (przy średniej 8 podów/node).
 
 ---
@@ -214,4 +214,4 @@ Rozwiązanie zwraca się względem CNAPPa **natychmiast — już w roku pierwszy
 | Pełny dzienny rescan wszystkich obrazów Trivy | +$200–400/m | Konfiguracja Trivy: skan tylko przy zmianie + tygodniowy full |
 | PowerBI Premium P1 zamiast PPU | +$4 400/m | PPU wystarczy dla ≤300 użytkowników |
 | Databricks all-purpose clusters (nie jobs) | ×3–5 kosztu compute | Wymuszenie job clusters z auto-termination |
-| Rollout na 79 klastrów z problemami kompatybilności | +20–40 MD | Pilot na 3 klastrach (1 per typ) przed masowym rollout |
+| Rollout na 455 klastrów z problemami kompatybilności | +20–40 MD | Pilot na 3 klastrach (1 per typ) przed masowym rollout |
