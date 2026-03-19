@@ -97,30 +97,27 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 |---------|----|
 | Schema design: Bronze/Silver/Gold dla CVE, runtime, audit | 8 |
 | Unity Catalog setup: namespaces, access control, data lineage | 6 |
-| CVE Enrichment Job: deduplikacja, normalizacja, join CMDB | 18 |
-| CVE Aggregation Job: Bronze→Silver→Gold, compliance scores | 15 |
-| Audit Analysis Job: join VulnReport + audit log | 10 |
+| CVE Enrichment Job: deduplikacja, normalizacja, join CMDB | 12 |
+| CVE Aggregation Job: Bronze→Silver→Gold, compliance scores | 9 |
+| Audit Analysis Job: join VulnReport + audit log | 7 |
 | Stream Analytics job: CRITICAL filter + allowlist → sec.alerts.critical | 8 |
 | SIEM connector (sec.alerts.critical → Splunk/QRadar) | 8 |
 | Delta Lake optimization: Z-ordering, bloom filters | 6 |
 | Error handling, dead-letter queues, retry logic | 8 |
-| Unit testy Spark jobs | 12 |
 | Integration testy end-to-end | 12 |
-| Performance testy (symulacja 5× wolumenu CVE) | 8 |
-| **Suma** | **119 MD** |
+| **Suma** | **84 MD** |
 
 ### Faza 4 — Reporting i dashboardy
 
 | Zadanie | MD |
 |---------|----|
-| Synapse Serverless SQL views na Gold layer | 8 |
-| PowerBI data model design | 6 |
-| PowerBI dashboardy (CVE heatmapa, compliance score, trend, Falco alert rate) | 18 |
-| Row-Level Security: team owner widzi tylko swoje klastry | 6 |
-| Synapse Pipeline: tygodniowy CSV/Excel export | 6 |
-| Logic App: e-mail/Teams dystrybucja raportu | 4 |
-| UAT z security teamem + iteracje | 10 |
-| **Suma** | **58 MD** |
+| Synapse Serverless SQL views na Gold layer | 4 |
+| PowerBI data model design | 3 |
+| PowerBI dashboardy (CVE heatmapa, compliance score, trend, Falco alert rate) | 9 |
+| Row-Level Security: team owner widzi tylko swoje klastry | 3 |
+| Synapse Pipeline: tygodniowy CSV/Excel export | 4 |
+| UAT z security teamem + iteracje | 5 |
+| **Suma** | **28 MD** |
 
 ### Faza 5 — Testy, bezpieczeństwo, go-live
 
@@ -132,8 +129,7 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 | Azure Monitor alerting dla health pipeline'u | 6 |
 | Runbooks operacyjne (upgrade Falco, rotacja kluczy, skalowanie) | 10 |
 | Handover + szkolenie ops teamu | 8 |
-| Project management (cały czas trwania projektu) | 20 |
-| **Suma** | **70 MD** |
+| **Suma** | **50 MD** |
 
 ### Łącznie
 
@@ -141,11 +137,11 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 |------|----|--------|
 | ~~1 — Infrastruktura Azure~~ | ~~68~~ | ✅ Zrealizowana |
 | 2 — Klastry (Trivy + Falco) | 77 | do realizacji |
-| 3 — Data Pipeline | 119 | do realizacji |
-| 4 — Reporting | 58 | do realizacji |
-| 5 — Testy + go-live | 70 | do realizacji |
-| **TOTAL pozostałe (base)** | **324 MD** | |
-| **TOTAL z buforem 15%** | **~373 MD** | |
+| 3 — Data Pipeline | 84 | do realizacji |
+| 4 — Reporting | 28 | do realizacji |
+| 5 — Testy + go-live | 50 | do realizacji |
+| **TOTAL pozostałe (base)** | **239 MD** | |
+| **TOTAL z buforem 15%** | **~275 MD** | |
 
 ---
 
@@ -154,15 +150,14 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 | Rola | Liczba osób | Główne fazy | MD |
 |------|------------|-------------|-----|
 | ~~Cloud / Platform Engineer~~ | ~~2~~ | ~~1~~, 5 | ~~80~~ → 15 (tylko Faza 5) |
-| Data Engineer | 3 | 3, 4 | 135 |
-| K8s / DevOps Engineer | 2 | 2, 5 | 90 |
-| Security Engineer | 1 | 2, 5 | 45 |
-| BI Developer | 1 | 4 | 40 |
+| Data Engineer | 2 | 3, 4 | 80 |
+| K8s / DevOps Engineer | 2 | 2, 5 | 80 |
+| Security Engineer | 1 | 2, 5 | 40 |
+| BI Developer | 1 | 4 | 20 |
 | QA / Performance Engineer | 1 | 3, 5 | 40 |
-| Project Manager | 1 | all | 8 |
-| **Razem** | **9 osób** | Fazy 2–5 | **~373 MD** |
+| **Razem** | **8 osób** | Fazy 2–5 | **~275 MD** |
 
-Peak równoległy (~7 osób) przypada na Fazę 3. Cloud/Platform Engineer zaangażowany jedynie w Fazę 5 (DR test, runbooks).
+Peak równoległy (~6 osób) przypada na Fazę 3. Cloud/Platform Engineer zaangażowany jedynie w Fazę 5 (DR test, runbooks).
 
 ---
 
@@ -184,27 +179,28 @@ Faza 5:                            ████████████
 
 ## Łączny koszt projektu (TCO)
 
-> Faza 1 zrealizowana — wdrożenie obejmuje wyłącznie Fazy 2–5 (~373 MD).
+> Faza 1 zrealizowana — wdrożenie obejmuje wyłącznie Fazy 2–5 (~275 MD).
+> Kursy NBP: 1 USD = 3,72 PLN · 1 EUR = 4,28 PLN.
 
 | Składnik | Standard | Private / Premium |
 |----------|---------|-------------------|
-| Wdrożenie Fazy 2–5 (373 MD × 2 000 PLN) | 746 000 PLN (~178 000 EUR) | 746 000 PLN (~178 000 EUR) |
-| Azure — rok 1 | ~47 000 PLN (~$10 300) | ~112 000 PLN (~$24 400) |
-| **TCO Rok 1** | **~793 000 PLN** (~189 000 EUR) | **~858 000 PLN** (~204 000 EUR) |
-| **TCO Rok 2+** (tylko Azure) | **~47 000 PLN/rok** | **~112 000 PLN/rok** |
+| Wdrożenie Fazy 2–5 (275 MD × 2 000 PLN) | 550 000 PLN (~128 500 EUR) | 550 000 PLN (~128 500 EUR) |
+| Azure — rok 1 | ~38 300 PLN (~$10 300) | ~90 800 PLN (~$24 400) |
+| **TCO Rok 1** | **~588 000 PLN** (~137 400 EUR) | **~641 000 PLN** (~150 000 EUR) |
+| **TCO Rok 2+** (tylko Azure) | **~38 300 PLN/rok** (~9 000 EUR) | **~90 800 PLN/rok** (~21 200 EUR) |
 
 ### Porównanie z benchmarkiem rynkowym
 
 | | Koszt rok 1 | Koszt rok 2+ | Uwagi |
 |--|------------|-------------|-------|
-| **Nasze rozwiązanie (Private/Premium)** | ~204 000 EUR | ~27 000 EUR/rok | Fazy 2–5 + Azure |
-| **Zewnętrzny integrator + Azure** | ~227 000 EUR | ~27 000 EUR/rok | 200 000 EUR integrator + Azure |
+| **Nasze rozwiązanie (Private/Premium)** | ~150 000 EUR | ~21 200 EUR/rok | Fazy 2–5 + Azure |
+| **Zewnętrzny integrator + Azure** | ~221 200 EUR | ~21 200 EUR/rok | 200 000 EUR integrator + Azure |
 | **Komercyjny CNAPP (benchmark)** | ~1 000 000 EUR | ~1 000 000 EUR/rok | licencja Wiz/Prisma Cloud |
 
 **Oszczędność względem CNAPPa:**
-- Rok 1: ~796 000 EUR
-- Rok 2: ~973 000 EUR
-- Rok 3+: ~973 000 EUR/rok
+- Rok 1: ~850 000 EUR
+- Rok 2: ~979 000 EUR
+- Rok 3+: ~979 000 EUR/rok
 
 Rozwiązanie zwraca się względem CNAPPa **natychmiast — już w roku pierwszym**. Koszt wdrożenia (własny lub przez integratora) jest porównywalny i niższy niż jedna rata roczna licencji komercyjnej.
 

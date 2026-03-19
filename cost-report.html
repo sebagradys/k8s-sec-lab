@@ -275,17 +275,17 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Koszt wdrożenia (Fazy 2–5)</div>
-      <div class="stat-value" style="color:#fbbf24;">~373 MD</div>
-      <div class="stat-sub">~746 000 PLN · Faza 1 już zrealizowana</div>
+      <div class="stat-value" style="color:#fbbf24;">~275 MD</div>
+      <div class="stat-sub">~550 000 PLN · Faza 1 już zrealizowana</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Zespół (Fazy 2–5)</div>
-      <div class="stat-value" style="color:#c4b5fd;">9 osób</div>
-      <div class="stat-sub">peak 7 równolegle (Faza 3)</div>
+      <div class="stat-value" style="color:#c4b5fd;">8 osób</div>
+      <div class="stat-sub">peak 6 równolegle (Faza 3)</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Oszczędność vs CNAPP</div>
-      <div class="stat-value" style="color:#86efac;">~796k EUR</div>
+      <div class="stat-value" style="color:#86efac;">~850k EUR</div>
       <div class="stat-sub">już w roku 1 · CNAPP benchmark 1M EUR/rok</div>
     </div>
   </div>
@@ -441,22 +441,21 @@
     <div class="phase-box">
       <div class="phase-header">
         <div class="phase-title">Faza 3 — Data Pipeline (Databricks + Stream Analytics)</div>
-        <div class="phase-md" style="color:#fb923c;">119 MD</div>
+        <div class="phase-md" style="color:#fb923c;">84 MD</div>
       </div>
       <div class="phase-table">
         <table>
           <tbody>
             <tr><td>Schema design: Bronze/Silver/Gold dla CVE, runtime, audit</td><td>8</td></tr>
             <tr><td>Unity Catalog setup: namespaces, access control, data lineage</td><td>6</td></tr>
-            <tr><td>CVE Enrichment Job: deduplikacja, normalizacja, join CMDB</td><td>18</td></tr>
-            <tr><td>CVE Aggregation Job: Bronze→Silver→Gold, compliance scores</td><td>15</td></tr>
-            <tr><td>Audit Analysis Job: join VulnReport + audit log (kto deployował)</td><td>10</td></tr>
+            <tr><td>CVE Enrichment Job: deduplikacja, normalizacja, join CMDB</td><td>12</td></tr>
+            <tr><td>CVE Aggregation Job: Bronze→Silver→Gold, compliance scores</td><td>9</td></tr>
+            <tr><td>Audit Analysis Job: join VulnReport + audit log (kto deployował)</td><td>7</td></tr>
             <tr><td>Stream Analytics: CRITICAL filter + allowlist → sec.alerts.critical</td><td>8</td></tr>
             <tr><td>SIEM connector (sec.alerts.critical → Splunk/QRadar)</td><td>8</td></tr>
             <tr><td>Delta Lake optimization: Z-ordering, bloom filters, liquid clustering</td><td>6</td></tr>
             <tr><td>Error handling, dead-letter queues, retry logic</td><td>8</td></tr>
-            <tr><td>Unit testy Spark jobs + integration testy end-to-end</td><td>24</td></tr>
-            <tr><td>Performance testy (symulacja 5× wolumenu CVE)</td><td>8</td></tr>
+            <tr><td>Integration testy end-to-end</td><td>12</td></tr>
           </tbody>
         </table>
       </div>
@@ -465,17 +464,17 @@
     <div class="phase-box">
       <div class="phase-header">
         <div class="phase-title">Faza 4 — Reporting i dashboardy</div>
-        <div class="phase-md" style="color:#f2c811;">58 MD</div>
+        <div class="phase-md" style="color:#f2c811;">28 MD</div>
       </div>
       <div class="phase-table">
         <table>
           <tbody>
-            <tr><td>Synapse Serverless SQL views na Gold layer</td><td>8</td></tr>
-            <tr><td>PowerBI data model design</td><td>6</td></tr>
-            <tr><td>PowerBI dashboardy (CVE heatmapa, compliance score, trend, Falco alert rate)</td><td>18</td></tr>
-            <tr><td>Row-Level Security: team owner widzi tylko swoje klastry</td><td>6</td></tr>
-            <tr><td>Synapse Pipeline: tygodniowy CSV/Excel export + Logic App (e-mail/Teams)</td><td>10</td></tr>
-            <tr><td>UAT z security teamem + iteracje</td><td>10</td></tr>
+            <tr><td>Synapse Serverless SQL views na Gold layer</td><td>4</td></tr>
+            <tr><td>PowerBI data model design</td><td>3</td></tr>
+            <tr><td>PowerBI dashboardy (CVE heatmapa, compliance score, trend, Falco alert rate)</td><td>9</td></tr>
+            <tr><td>Row-Level Security: team owner widzi tylko swoje klastry</td><td>3</td></tr>
+            <tr><td>Synapse Pipeline: tygodniowy CSV/Excel export</td><td>4</td></tr>
+            <tr><td>UAT z security teamem + iteracje</td><td>5</td></tr>
           </tbody>
         </table>
       </div>
@@ -484,7 +483,7 @@
     <div class="phase-box">
       <div class="phase-header">
         <div class="phase-title">Faza 5 — Testy, bezpieczeństwo, go-live</div>
-        <div class="phase-md" style="color:#c4b5fd;">70 MD</div>
+        <div class="phase-md" style="color:#c4b5fd;">50 MD</div>
       </div>
       <div class="phase-table">
         <table>
@@ -495,7 +494,6 @@
             <tr><td>Azure Monitor alerting dla health pipeline'u</td><td>6</td></tr>
             <tr><td>Runbooks operacyjne (upgrade Falco, rotacja kluczy, skalowanie)</td><td>10</td></tr>
             <tr><td>Handover + szkolenie ops teamu</td><td>8</td></tr>
-            <tr><td>Project management (cały czas trwania projektu)</td><td>20</td></tr>
           </tbody>
         </table>
       </div>
@@ -506,8 +504,8 @@
       <div class="phase-header" style="border-bottom-color:#2a2550;">
         <div class="phase-title" style="color:#c4b5fd;">ŁĄCZNIE (Fazy 2–5)</div>
         <div style="display:flex; gap:10px; align-items:center;">
-          <div class="phase-md" style="color:var(--text-muted);">324 MD base</div>
-          <div class="phase-md" style="color:#c4b5fd; font-size:1rem;">~373 MD z buforem 15%</div>
+          <div class="phase-md" style="color:var(--text-muted);">239 MD base</div>
+          <div class="phase-md" style="color:#c4b5fd; font-size:1rem;">~275 MD z buforem 15%</div>
         </div>
       </div>
       <div class="phase-table">
@@ -515,11 +513,11 @@
           <tbody>
             <tr><td style="color:#6ee7b7; opacity:0.5;">✅ Faza 1 — Infrastruktura (zrealizowana)</td><td style="color:#6ee7b7; opacity:0.5;">68 — nie wliczane</td></tr>
             <tr><td>Faza 2 — Klastry</td><td style="color:#86efac;">77</td></tr>
-            <tr><td>Faza 3 — Data Pipeline</td><td style="color:#fb923c;">119</td></tr>
-            <tr><td>Faza 4 — Reporting</td><td style="color:#f2c811;">58</td></tr>
-            <tr><td>Faza 5 — Testy + go-live</td><td style="color:#c4b5fd;">70</td></tr>
-            <tr class="total-row"><td>Base total (Fazy 2–5)</td><td>324 MD</td></tr>
-            <tr class="total-row"><td>Z buforem 15%</td><td>~373 MD</td></tr>
+            <tr><td>Faza 3 — Data Pipeline</td><td style="color:#fb923c;">84</td></tr>
+            <tr><td>Faza 4 — Reporting</td><td style="color:#f2c811;">28</td></tr>
+            <tr><td>Faza 5 — Testy + go-live</td><td style="color:#c4b5fd;">50</td></tr>
+            <tr class="total-row"><td>Base total (Fazy 2–5)</td><td>239 MD</td></tr>
+            <tr class="total-row"><td>Z buforem 15%</td><td>~275 MD</td></tr>
           </tbody>
         </table>
       </div>
@@ -544,30 +542,30 @@
         </tr>
         <tr>
           <td>Data Engineer</td>
-          <td>3</td>
-          <td><span class="role-badge" style="background:#1a0e00;color:#fb923c;border:1px solid #92400e;">1, 3, 4</span></td>
-          <td>135</td>
+          <td>2</td>
+          <td><span class="role-badge" style="background:#1a0e00;color:#fb923c;border:1px solid #92400e;">3, 4</span></td>
+          <td>80</td>
           <td>Spark jobs, Delta Lake, schema design, Synapse views, Unity Catalog</td>
         </tr>
         <tr>
           <td>K8s / DevOps Engineer</td>
           <td>2</td>
           <td><span class="role-badge" style="background:#0a1a0a;color:#86efac;border:1px solid #166534;">2, 5</span></td>
-          <td>90</td>
+          <td>80</td>
           <td>Trivy Helm, Falco Helm, GitOps rollout, Fluent Bit, CronJob producer</td>
         </tr>
         <tr>
           <td>Security Engineer</td>
           <td>1</td>
           <td><span class="role-badge" style="background:#1a0808;color:#fca5a5;border:1px solid #991b1b;">2, 5</span></td>
-          <td>45</td>
+          <td>40</td>
           <td>Falco rules tuning, allowlists, security review, IAM audit, SIEM integration</td>
         </tr>
         <tr>
           <td>BI Developer</td>
           <td>1</td>
           <td><span class="role-badge" style="background:#1a1500;color:#fbbf24;border:1px solid #78350f;">4</span></td>
-          <td>40</td>
+          <td>20</td>
           <td>PowerBI data model, dashboardy, Row-Level Security, UAT</td>
         </tr>
         <tr>
@@ -575,21 +573,14 @@
           <td>1</td>
           <td><span class="role-badge" style="background:#130a20;color:#c4b5fd;border:1px solid #5b21b6;">3, 5</span></td>
           <td>40</td>
-          <td>Unit testy Spark, integration testy, load test, performance profiling</td>
-        </tr>
-        <tr>
-          <td>Project Manager</td>
-          <td>1</td>
-          <td><span class="role-badge" style="background:#0f0f1f;color:#93c5fd;border:1px solid #1d4ed8;">all</span></td>
-          <td>20</td>
-          <td>Koordynacja, stakeholder management, risk tracking, dokumentacja projektu</td>
+          <td>Integration testy, load test, performance profiling</td>
         </tr>
         <tr class="total-row">
           <td>Razem (Fazy 2–5)</td>
-          <td>9 osób</td>
+          <td>8 osób</td>
           <td></td>
-          <td>~373 MD</td>
-          <td>Peak: ~7 osób równolegle w Fazie 3</td>
+          <td>~275 MD</td>
+          <td>Peak: ~6 osób równolegle w Fazie 3</td>
         </tr>
       </tbody>
     </table>
@@ -687,29 +678,32 @@
 <!-- TCO -->
 <div class="section">
   <div class="section-title">TCO — Total Cost of Ownership</div>
+  <p class="note" style="border-color:#4338ca; margin-bottom:12px;">
+    <strong>Kursy NBP:</strong> 1 USD = 3,72 PLN · 1 EUR = 4,28 PLN · Faza 1 już zrealizowana — nie wliczana w koszt.
+  </p>
   <div class="tco-row">
     <div class="tco-box" style="border-color:#2e3350;">
       <h3 style="color:#93c5fd;">Wariant Standard</h3>
       <div class="tco-line"><span class="tco-line-label" style="color:#6ee7b7; font-size:0.68rem;">✅ Faza 1 (zrealizowana)</span><span class="tco-line-value" style="color:#6ee7b7; font-size:0.72rem;">nie wliczana</span></div>
-      <div class="tco-line"><span class="tco-line-label">Wdrożenie Fazy 2–5 (373 MD × 2 000 PLN)</span><span class="tco-line-value">746 000 PLN</span></div>
-      <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$10 300)</span><span class="tco-line-value">~47 000 PLN</span></div>
-      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#93c5fd;">~793 000 PLN (~189k EUR)</span></div>
-      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#93c5fd;">~47 000 PLN/rok</span></div>
+      <div class="tco-line"><span class="tco-line-label">Wdrożenie Fazy 2–5 (275 MD × 2 000 PLN)</span><span class="tco-line-value">550 000 PLN</span></div>
+      <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$10 300 × 3,72)</span><span class="tco-line-value">~38 300 PLN</span></div>
+      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#93c5fd;">~588 000 PLN (~137k EUR)</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#93c5fd;">~38 300 PLN/rok (~9k EUR)</span></div>
     </div>
     <div class="tco-box" style="border-color:#166534;">
       <h3 style="color:#86efac;">Wariant Private / Premium</h3>
       <div class="tco-line"><span class="tco-line-label" style="color:#6ee7b7; font-size:0.68rem;">✅ Faza 1 (zrealizowana)</span><span class="tco-line-value" style="color:#6ee7b7; font-size:0.72rem;">nie wliczana</span></div>
-      <div class="tco-line"><span class="tco-line-label">Wdrożenie Fazy 2–5 (373 MD × 2 000 PLN)</span><span class="tco-line-value">746 000 PLN</span></div>
-      <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$24 400)</span><span class="tco-line-value">~112 000 PLN</span></div>
-      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#86efac;">~858 000 PLN (~204k EUR)</span></div>
-      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#86efac;">~112 000 PLN/rok</span></div>
+      <div class="tco-line"><span class="tco-line-label">Wdrożenie Fazy 2–5 (275 MD × 2 000 PLN)</span><span class="tco-line-value">550 000 PLN</span></div>
+      <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$24 400 × 3,72)</span><span class="tco-line-value">~90 800 PLN</span></div>
+      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#86efac;">~641 000 PLN (~150k EUR)</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#86efac;">~90 800 PLN/rok (~21k EUR)</span></div>
     </div>
     <div class="tco-box" style="border-color:#991b1b;">
       <h3 style="color:#f87171;">Benchmark — Komercyjny CNAPP</h3>
       <div class="tco-line"><span class="tco-line-label">Wiz / Prisma Cloud (3 950 nodów)</span><span class="tco-line-value" style="color:#f87171;">~1 000 000 EUR/rok</span></div>
       <div class="tco-line"><span class="tco-line-label">Zewnętrzny integrator (wdrożenie)</span><span class="tco-line-value">~200 000 EUR</span></div>
-      <div class="tco-total"><span>Oszczędność rok 1</span><span style="color:#86efac;">~796 000 EUR</span></div>
-      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Oszczędność rok 2+ (tylko Azure vs CNAPP)</span><span class="tco-line-value" style="color:#86efac;">~973 000 EUR/rok</span></div>
+      <div class="tco-total"><span>Oszczędność rok 1</span><span style="color:#86efac;">~850 000 EUR</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Oszczędność rok 2+ (tylko Azure vs CNAPP)</span><span class="tco-line-value" style="color:#86efac;">~979 000 EUR/rok</span></div>
       <div class="tco-line"><span class="tco-line-label" style="color:#fbbf24;">Zwrot inwestycji</span><span class="tco-line-value" style="color:#fbbf24;">natychmiast — rok 1</span></div>
     </div>
   </div>
