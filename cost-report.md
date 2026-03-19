@@ -184,21 +184,21 @@ Faza 5:                            ████████████
 
 | Składnik | Standard | Private / Premium |
 |----------|---------|-------------------|
-| Wdrożenie Fazy 2–5 (275 MD × 2 000 PLN) | 550 000 PLN (~128 500 EUR) | 550 000 PLN (~128 500 EUR) |
+| Wdrożenie Fazy 2–5 (275 MD × 3 200 PLN) | 880 000 PLN (~205 600 EUR) | 880 000 PLN (~205 600 EUR) |
 | Azure — rok 1 | ~38 300 PLN (~$10 300) | ~90 800 PLN (~$24 400) |
-| **TCO Rok 1** | **~588 000 PLN** (~137 400 EUR) | **~641 000 PLN** (~150 000 EUR) |
+| **TCO Rok 1** | **~918 000 PLN** (~214 500 EUR) | **~971 000 PLN** (~227 000 EUR) |
 | **TCO Rok 2+** (tylko Azure) | **~38 300 PLN/rok** (~9 000 EUR) | **~90 800 PLN/rok** (~21 200 EUR) |
 
 ### Porównanie z benchmarkiem rynkowym
 
 | | Koszt rok 1 | Koszt rok 2+ | Uwagi |
 |--|------------|-------------|-------|
-| **Nasze rozwiązanie (Private/Premium)** | ~150 000 EUR | ~21 200 EUR/rok | Fazy 2–5 + Azure |
+| **Nasze rozwiązanie (Private/Premium)** | ~227 000 EUR | ~21 200 EUR/rok | Fazy 2–5 + Azure |
 | **Zewnętrzny integrator + Azure** | ~221 200 EUR | ~21 200 EUR/rok | 200 000 EUR integrator + Azure |
 | **Komercyjny CNAPP (benchmark)** | ~667 000 EUR | ~667 000 EUR/rok | licencja Wiz/Prisma Cloud |
 
 **Oszczędność względem CNAPPa:**
-- Rok 1: ~517 000 EUR
+- Rok 1: ~440 000 EUR
 - Rok 2: ~646 000 EUR
 - Rok 3+: ~646 000 EUR/rok
 
