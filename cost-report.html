@@ -274,19 +274,19 @@
       <div class="stat-sub">private/premium deployment</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Koszt wdrożenia</div>
-      <div class="stat-value" style="color:#fbbf24;">~450 MD</div>
-      <div class="stat-sub">~900 000 PLN · 7–9 miesięcy</div>
+      <div class="stat-label">Koszt wdrożenia (Fazy 2–5)</div>
+      <div class="stat-value" style="color:#fbbf24;">~373 MD</div>
+      <div class="stat-sub">~746 000 PLN · Faza 1 już zrealizowana</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Zespół</div>
-      <div class="stat-value" style="color:#c4b5fd;">11 osób</div>
-      <div class="stat-sub">peak 8 równolegle (Faza 3)</div>
+      <div class="stat-label">Zespół (Fazy 2–5)</div>
+      <div class="stat-value" style="color:#c4b5fd;">9 osób</div>
+      <div class="stat-sub">peak 7 równolegle (Faza 3)</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Break-even vs CNAPP</div>
-      <div class="stat-value" style="color:#f87171;">rok 5–6</div>
-      <div class="stat-sub">vs Wiz/Prisma $400k–800k/rok</div>
+      <div class="stat-label">Oszczędność vs CNAPP</div>
+      <div class="stat-value" style="color:#86efac;">~796k EUR</div>
+      <div class="stat-sub">już w roku 1 · CNAPP benchmark 1M EUR/rok</div>
     </div>
   </div>
 </div>
@@ -398,14 +398,14 @@
   <div class="section-title">Fazy wdrożenia — Man-Days</div>
   <div class="phases">
 
-    <div class="phase-box">
-      <div class="phase-header">
-        <div class="phase-title">Faza 1 — Infrastruktura Azure (IaC, networking, IAM)</div>
-        <div class="phase-md" style="color:#50e6ff;">68 MD</div>
+    <div class="phase-box" style="border-color:#166534; opacity:0.6;">
+      <div class="phase-header" style="background:#071510; border-bottom-color:#0d2b1a;">
+        <div class="phase-title" style="color:#6ee7b7;">✅ Faza 1 — Infrastruktura Azure (IaC, networking, IAM) — ZREALIZOWANA</div>
+        <div class="phase-md" style="color:#6ee7b7; background:#0a1f14;">68 MD — nie wliczane</div>
       </div>
       <div class="phase-table">
         <table>
-          <tbody>
+          <tbody style="opacity:0.55;">
             <tr><td>Terraform modules: Event Hubs, ADLS, Databricks, Synapse, Key Vault</td><td>20</td></tr>
             <tr><td>VNet, private endpoints, private DNS zones (6+ usług)</td><td>12</td></tr>
             <tr><td>RBAC design + Azure AD groups + service principals</td><td>8</td></tr>
@@ -504,22 +504,22 @@
     <!-- TOTAL -->
     <div class="phase-box" style="border-color:#4338ca; background:#0f0d1f;">
       <div class="phase-header" style="border-bottom-color:#2a2550;">
-        <div class="phase-title" style="color:#c4b5fd;">ŁĄCZNIE</div>
+        <div class="phase-title" style="color:#c4b5fd;">ŁĄCZNIE (Fazy 2–5)</div>
         <div style="display:flex; gap:10px; align-items:center;">
-          <div class="phase-md" style="color:var(--text-muted);">392 MD base</div>
-          <div class="phase-md" style="color:#c4b5fd; font-size:1rem;">~450 MD z buforem 15%</div>
+          <div class="phase-md" style="color:var(--text-muted);">324 MD base</div>
+          <div class="phase-md" style="color:#c4b5fd; font-size:1rem;">~373 MD z buforem 15%</div>
         </div>
       </div>
       <div class="phase-table">
         <table>
           <tbody>
-            <tr><td>Faza 1 — Infrastruktura</td><td style="color:#50e6ff;">68</td></tr>
+            <tr><td style="color:#6ee7b7; opacity:0.5;">✅ Faza 1 — Infrastruktura (zrealizowana)</td><td style="color:#6ee7b7; opacity:0.5;">68 — nie wliczane</td></tr>
             <tr><td>Faza 2 — Klastry</td><td style="color:#86efac;">77</td></tr>
             <tr><td>Faza 3 — Data Pipeline</td><td style="color:#fb923c;">119</td></tr>
             <tr><td>Faza 4 — Reporting</td><td style="color:#f2c811;">58</td></tr>
             <tr><td>Faza 5 — Testy + go-live</td><td style="color:#c4b5fd;">70</td></tr>
-            <tr class="total-row"><td>Base total</td><td>392 MD</td></tr>
-            <tr class="total-row"><td>Z buforem 15%</td><td>~450 MD</td></tr>
+            <tr class="total-row"><td>Base total (Fazy 2–5)</td><td>324 MD</td></tr>
+            <tr class="total-row"><td>Z buforem 15%</td><td>~373 MD</td></tr>
           </tbody>
         </table>
       </div>
@@ -535,12 +535,12 @@
     <table>
       <thead><tr><th>Rola</th><th>Liczba</th><th>Główne fazy</th><th>MD</th><th>Kluczowe zadania</th></tr></thead>
       <tbody>
-        <tr>
+        <tr style="opacity:0.5;">
           <td>Cloud / Platform Engineer</td>
           <td>2</td>
-          <td><span class="role-badge" style="background:#0a1220;color:#50e6ff;border:1px solid #1d4ed8;">1, 5</span></td>
-          <td>80</td>
-          <td>Terraform, VNet, private endpoints, IAM, disaster recovery</td>
+          <td><span class="role-badge" style="background:#071510;color:#6ee7b7;border:1px solid #166534;">✅ Faza 1</span> <span class="role-badge" style="background:#0a1220;color:#50e6ff;border:1px solid #1d4ed8;">5</span></td>
+          <td>15 <span style="font-size:0.65rem; color:var(--text-muted);">(tylko DR + runbooks)</span></td>
+          <td>Disaster recovery test, runbooks — Faza 1 już zrealizowana</td>
         </tr>
         <tr>
           <td>Data Engineer</td>
@@ -585,11 +585,11 @@
           <td>Koordynacja, stakeholder management, risk tracking, dokumentacja projektu</td>
         </tr>
         <tr class="total-row">
-          <td>Razem</td>
-          <td>11 osób</td>
+          <td>Razem (Fazy 2–5)</td>
+          <td>9 osób</td>
           <td></td>
-          <td>~450 MD</td>
-          <td>Peak: ~8 osób równolegle w Fazie 3</td>
+          <td>~373 MD</td>
+          <td>Peak: ~7 osób równolegle w Fazie 3</td>
         </tr>
       </tbody>
     </table>
@@ -598,7 +598,7 @@
 
 <!-- TIMELINE -->
 <div class="section">
-  <div class="section-title">Timeline — 7–9 miesięcy</div>
+  <div class="section-title">Timeline od teraz — 5–7 miesięcy (Fazy 2–5)</div>
   <div class="timeline-wrap">
     <div class="tl-months">
       <div class="tl-month-label">M1</div>
@@ -611,12 +611,12 @@
       <div class="tl-month-label">M8</div>
       <div class="tl-month-label">M9</div>
     </div>
-    <div class="tl-row">
-      <div class="tl-label" style="color:#50e6ff;">Faza 1 — Infrastruktura</div>
+    <div class="tl-row" style="opacity:0.4;">
+      <div class="tl-label" style="color:#6ee7b7;">✅ Faza 1 — DONE</div>
       <div class="tl-bar-wrap">
-        <div class="tl-cell" style="background:#1d4ed8;"></div>
-        <div class="tl-cell" style="background:#1d4ed8;"></div>
-        <div class="tl-cell" style="background:#1e3a8a; opacity:0.5;"></div>
+        <div class="tl-cell" style="background:#166534; border:1px solid #6ee7b7;"></div>
+        <div class="tl-cell" style="background:#166534; border:1px solid #6ee7b7;"></div>
+        <div class="tl-cell tl-empty"></div>
         <div class="tl-cell tl-empty"></div>
         <div class="tl-cell tl-empty"></div>
         <div class="tl-cell tl-empty"></div>
@@ -690,24 +690,27 @@
   <div class="tco-row">
     <div class="tco-box" style="border-color:#2e3350;">
       <h3 style="color:#93c5fd;">Wariant Standard</h3>
-      <div class="tco-line"><span class="tco-line-label">Wdrożenie (450 MD × 2 000 PLN)</span><span class="tco-line-value">900 000 PLN</span></div>
+      <div class="tco-line"><span class="tco-line-label" style="color:#6ee7b7; font-size:0.68rem;">✅ Faza 1 (zrealizowana)</span><span class="tco-line-value" style="color:#6ee7b7; font-size:0.72rem;">nie wliczana</span></div>
+      <div class="tco-line"><span class="tco-line-label">Wdrożenie Fazy 2–5 (373 MD × 2 000 PLN)</span><span class="tco-line-value">746 000 PLN</span></div>
       <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$10 300)</span><span class="tco-line-value">~47 000 PLN</span></div>
-      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#93c5fd;">~947 000 PLN</span></div>
+      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#93c5fd;">~793 000 PLN (~189k EUR)</span></div>
       <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#93c5fd;">~47 000 PLN/rok</span></div>
     </div>
     <div class="tco-box" style="border-color:#166534;">
       <h3 style="color:#86efac;">Wariant Private / Premium</h3>
-      <div class="tco-line"><span class="tco-line-label">Wdrożenie (450 MD × 2 000 PLN)</span><span class="tco-line-value">900 000 PLN</span></div>
+      <div class="tco-line"><span class="tco-line-label" style="color:#6ee7b7; font-size:0.68rem;">✅ Faza 1 (zrealizowana)</span><span class="tco-line-value" style="color:#6ee7b7; font-size:0.72rem;">nie wliczana</span></div>
+      <div class="tco-line"><span class="tco-line-label">Wdrożenie Fazy 2–5 (373 MD × 2 000 PLN)</span><span class="tco-line-value">746 000 PLN</span></div>
       <div class="tco-line"><span class="tco-line-label">Azure rok 1 (~$24 400)</span><span class="tco-line-value">~112 000 PLN</span></div>
-      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#86efac;">~1 012 000 PLN</span></div>
+      <div class="tco-total"><span>TCO Rok 1</span><span style="color:#86efac;">~858 000 PLN (~204k EUR)</span></div>
       <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Azure rok 2+ (recurring)</span><span class="tco-line-value" style="color:#86efac;">~112 000 PLN/rok</span></div>
     </div>
     <div class="tco-box" style="border-color:#991b1b;">
       <h3 style="color:#f87171;">Benchmark — Komercyjny CNAPP</h3>
-      <div class="tco-line"><span class="tco-line-label">Wiz / Prisma Cloud (3 950 nodów)</span><span class="tco-line-value">$400k–800k/rok</span></div>
-      <div class="tco-line"><span class="tco-line-label">~1 800 000–3 600 000 PLN/rok</span><span class="tco-line-value"></span></div>
-      <div class="tco-total"><span>Break-even (Standard)</span><span style="color:#f87171;">Rok 3–4</span></div>
-      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Break-even (Private/Premium)</span><span class="tco-line-value" style="color:#f87171;">Rok 5–6</span></div>
+      <div class="tco-line"><span class="tco-line-label">Wiz / Prisma Cloud (3 950 nodów)</span><span class="tco-line-value" style="color:#f87171;">~1 000 000 EUR/rok</span></div>
+      <div class="tco-line"><span class="tco-line-label">Zewnętrzny integrator (wdrożenie)</span><span class="tco-line-value">~200 000 EUR</span></div>
+      <div class="tco-total"><span>Oszczędność rok 1</span><span style="color:#86efac;">~796 000 EUR</span></div>
+      <div class="tco-line" style="margin-top:12px;"><span class="tco-line-label">Oszczędność rok 2+ (tylko Azure vs CNAPP)</span><span class="tco-line-value" style="color:#86efac;">~973 000 EUR/rok</span></div>
+      <div class="tco-line"><span class="tco-line-label" style="color:#fbbf24;">Zwrot inwestycji</span><span class="tco-line-value" style="color:#fbbf24;">natychmiast — rok 1</span></div>
     </div>
   </div>
 </div>

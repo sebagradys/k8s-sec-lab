@@ -630,12 +630,12 @@
 
 <!-- VS OPEN SOURCE TABLE -->
 <div class="layer">
-  <div class="layer-label">Mapowanie: open source → Azure managed service</div>
+  <div class="layer-label">Mapowanie: alternatywy open source → Azure managed service</div>
   <table class="vs-table">
     <thead>
       <tr>
         <th>Rola</th>
-        <th>Open source (poprzedni diagram)</th>
+        <th>Alternatywa open source</th>
         <th>Azure managed</th>
         <th>Co zyskujesz</th>
       </tr>
@@ -720,7 +720,7 @@
       <strong>PowerBI i Delta Lake:</strong> PowerBI Premium / Fabric obsługuje DirectQuery na Delta Lake przez Synapse lub Databricks SQL Warehouse. Bez Premium: Synapse Serverless SQL jako pośrednik (tańsze). Import mode (scheduled refresh) jest najszybszy dla dashboardów ale dane mają max 1h opóźnienie.
     </div>
     <div class="note" style="border-color:#f87171;">
-      <strong>Koszt vs open source:</strong> Event Hubs ~$200–500/m (Standard tier, 20 TUs), Databricks ~$500–2000/m (zależy od DBU), Synapse Serverless ~$5/TB queries, ADLS ~$20/TB. Łącznie: ~$1000–3000/m za cały managed stack. Open source jest tańszy w licencjach, droższy w ludziach. Break-even przy braku dedykowanego data engineering teamu.
+      <strong>Koszt vs komercyjny CNAPP:</strong> Azure managed stack (private/premium) to ~$2 000/m (~$24 000/rok). Komercyjny CNAPP klasy Wiz/Prisma Cloud na środowisko 3 950 nodów to koszt rzędu <strong style="color:#f87171;">~1 000 000 EUR/rok</strong>. Wdrożenie przez zewnętrznego integratora: ~200 000 EUR. Wdrożenie własne (Fazy 2–5, bez już zrealizowanej infrastruktury): ~373 MD ≈ ~178 000 EUR. Azure stack zwraca się względem CNAPPa już w pierwszym roku — oszczędność rzędu 800 000 EUR rocznie od roku 2.
     </div>
   </div>
 </div>

@@ -63,7 +63,9 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 
 ## Koszty wdrożenia — Man-Days
 
-### Faza 1 — Infrastruktura Azure (IaC, networking, IAM)
+> **Faza 1 jest już zrealizowana** — infrastruktura Azure (IaC, networking, IAM, Key Vault, środowiska) została wdrożona. Poniższe zestawienie obejmuje wyłącznie pozostałe fazy (2–5). Faza 1 pokazana dla referencji jako zakończona.
+
+### ~~Faza 1 — Infrastruktura Azure (IaC, networking, IAM)~~ ✅ ZREALIZOWANA
 
 | Zadanie | MD |
 |---------|----|
@@ -73,7 +75,7 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 | Customer-Managed Keys (Key Vault + rotation policy) | 5 |
 | CI/CD pipeline (Azure DevOps) dla IaC | 8 |
 | Środowiska dev/staging/prod | 15 |
-| **Suma** | **68 MD** |
+| ~~**Suma**~~ | ~~**68 MD**~~ — **nie wliczana w koszt** |
 
 ### Faza 2 — Warstwa klastrów (Trivy + Falco + producenci)
 
@@ -135,64 +137,76 @@ Główne składowe: Event Hubs Premium (+$290), PowerBI PPU (+$450), Databricks 
 
 ### Łącznie
 
-| Faza | MD |
-|------|----|
-| 1 — Infrastruktura Azure | 68 |
-| 2 — Klastry (Trivy + Falco) | 77 |
-| 3 — Data Pipeline | 119 |
-| 4 — Reporting | 58 |
-| 5 — Testy + go-live | 70 |
-| **TOTAL (base)** | **392 MD** |
-| **TOTAL z buforem 15%** | **~450 MD** |
+| Faza | MD | Status |
+|------|----|--------|
+| ~~1 — Infrastruktura Azure~~ | ~~68~~ | ✅ Zrealizowana |
+| 2 — Klastry (Trivy + Falco) | 77 | do realizacji |
+| 3 — Data Pipeline | 119 | do realizacji |
+| 4 — Reporting | 58 | do realizacji |
+| 5 — Testy + go-live | 70 | do realizacji |
+| **TOTAL pozostałe (base)** | **324 MD** | |
+| **TOTAL z buforem 15%** | **~373 MD** | |
 
 ---
 
-## Skład zespołu
+## Skład zespołu (Fazy 2–5)
 
 | Rola | Liczba osób | Główne fazy | MD |
 |------|------------|-------------|-----|
-| Cloud / Platform Engineer | 2 | 1, 5 | 80 |
-| Data Engineer | 3 | 1, 3, 4 | 135 |
+| ~~Cloud / Platform Engineer~~ | ~~2~~ | ~~1~~, 5 | ~~80~~ → 15 (tylko Faza 5) |
+| Data Engineer | 3 | 3, 4 | 135 |
 | K8s / DevOps Engineer | 2 | 2, 5 | 90 |
 | Security Engineer | 1 | 2, 5 | 45 |
 | BI Developer | 1 | 4 | 40 |
 | QA / Performance Engineer | 1 | 3, 5 | 40 |
-| Project Manager | 1 | all | 20 |
-| **Razem** | **11 osób** | | **~450 MD** |
+| Project Manager | 1 | all | 8 |
+| **Razem** | **9 osób** | Fazy 2–5 | **~373 MD** |
 
-Peak równoległy (~8 osób) przypada na Fazę 3.
-
----
-
-## Timeline
-
-```
-Miesiąc:   1     2     3     4     5     6     7     8     9
-           ├─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
-Faza 1:    ████████████
-Faza 2:          ████████████████
-Faza 3:                ████████████████████
-Faza 4:                            ██████████
-Faza 5:                                  ████████████████
-```
-
-**Realistyczny czas: 7–9 miesięcy** od kickoffu do produkcyjnego go-live (rolling deployment na wszystkich klastrach).
+Peak równoległy (~7 osób) przypada na Fazę 3. Cloud/Platform Engineer zaangażowany jedynie w Fazę 5 (DR test, runbooks).
 
 ---
 
-## Łączny koszt projektu (TCO rok 1)
+## Timeline (od teraz — Fazy 2–5)
+
+```
+Miesiąc:   1     2     3     4     5     6     7
+           ├─────┼─────┼─────┼─────┼─────┼─────┤
+Faza 1:    [✅ DONE]
+Faza 2:    ████████████████
+Faza 3:          ████████████████████
+Faza 4:                      ██████████
+Faza 5:                            ████████████
+```
+
+**Realistyczny czas od teraz: 5–7 miesięcy** do produkcyjnego go-live (rolling deployment na wszystkich klastrach).
+
+---
+
+## Łączny koszt projektu (TCO)
+
+> Faza 1 zrealizowana — wdrożenie obejmuje wyłącznie Fazy 2–5 (~373 MD).
 
 | Składnik | Standard | Private / Premium |
 |----------|---------|-------------------|
-| Wdrożenie (450 MD × 2 000 PLN) | 900 000 PLN | 900 000 PLN |
+| Wdrożenie Fazy 2–5 (373 MD × 2 000 PLN) | 746 000 PLN (~178 000 EUR) | 746 000 PLN (~178 000 EUR) |
 | Azure — rok 1 | ~47 000 PLN (~$10 300) | ~112 000 PLN (~$24 400) |
-| **TCO Rok 1** | **~947 000 PLN** | **~1 012 000 PLN** |
+| **TCO Rok 1** | **~793 000 PLN** (~189 000 EUR) | **~858 000 PLN** (~204 000 EUR) |
 | **TCO Rok 2+** (tylko Azure) | **~47 000 PLN/rok** | **~112 000 PLN/rok** |
 
-### Porównanie z komercyjnym CNAPP
+### Porównanie z benchmarkiem rynkowym
 
-Wiz / Prisma Cloud na 3 950 nodach: szacunkowo **$400 000–800 000/rok** (licencja).
-Open source + Azure backend break-even: **~rok 3–4** przy wariancie standard, **~rok 5–6** przy private/premium.
+| | Koszt rok 1 | Koszt rok 2+ | Uwagi |
+|--|------------|-------------|-------|
+| **Nasze rozwiązanie (Private/Premium)** | ~204 000 EUR | ~27 000 EUR/rok | Fazy 2–5 + Azure |
+| **Zewnętrzny integrator + Azure** | ~227 000 EUR | ~27 000 EUR/rok | 200 000 EUR integrator + Azure |
+| **Komercyjny CNAPP (benchmark)** | ~1 000 000 EUR | ~1 000 000 EUR/rok | licencja Wiz/Prisma Cloud |
+
+**Oszczędność względem CNAPPa:**
+- Rok 1: ~796 000 EUR
+- Rok 2: ~973 000 EUR
+- Rok 3+: ~973 000 EUR/rok
+
+Rozwiązanie zwraca się względem CNAPPa **natychmiast — już w roku pierwszym**. Koszt wdrożenia (własny lub przez integratora) jest porównywalny i niższy niż jedna rata roczna licencji komercyjnej.
 
 ---
 
